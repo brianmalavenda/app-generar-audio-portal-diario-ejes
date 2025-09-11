@@ -1,0 +1,106 @@
+# INCICAR ENTORNO VIRTUAL DE PYTHON
+python3 -m venv ~/entorno_python
+source ~/entorno_python/bin/activate
+
+## Instalar dependencias
+```
+    pip install python-docx
+    pip install request
+    pip install google-cloud-texttospeech
+```
+o
+```
+    pip install -r requirements.txt 
+```
+
+**Preparar el documento:**
+Asegúrate de que tu documento esté en formato .docx (no .doc)
+Resalta con amarillo el texto que quieres conservar
+
+**Configurar las rutas:**
+Modifica la variable documento_entrada con la ruta a tu documento
+El script guardará el resultado en texto_resaltado.docx (puedes cambiar este nombre)
+
+**Ejecutar el script:**
+```
+python nombre_del_script.py
+```
+
+### ⚠️ Limitaciones y consideraciones:
+Solo funciona con archivos .docx (no con los antiguos .doc)
+Detecta específicamente el color amarillo de resaltado (WD_COLOR_INDEX.YELLOW)
+El texto extraído mantendrá su estructura original en párrafos
+Si no encuentra texto resaltado en amarillo, te lo indicará
+🔧 Posibles mejoras:
+Si necesitas detectar otros colores o formatos adicionales (como subrayado), puedo ayudarte a modificar el script. También puedo ayudarte a crea*r una interfaz gráfica sencilla si prefieres no trabajar con la línea de comandos.
+
+
+## Iniciarlizar nuestro cliente de Google cloud
+
+Una vez inicializada la conexion y autenticacion con gcloud podremos ejecutar el script sin problemas y nos generará de salida un archivo de audio con el nombre que le indicamos en el script.
+
+```
+    gcloud init --console-only
+```
+
+## Generar un texto de formato SSML**
+
+## API
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "x-goog-user-project": project_id,
+        "Content-Type": "application/json; charset=utf-8"
+    }
+    
+    data = {
+        "input": {
+            "ssml": text
+        },
+        "voice": {
+            "languageCode": "es-US", # Esto indica el idioma español
+            # "name": "es-US-Standard-A", # Esto indica la voz específica
+            # "ssmlGender": "FEMALE" # Género de la voz
+        },
+        "audioConfig": {
+            "audioEncoding": "MP3"
+        }
+    }
+
+## Para utilizar el texto directamente en el script
+
+    # TEXT = """<speak>
+    #     <voice name="es-US-Standard-B" gender="MALE">
+    #         <prosody rate="medium" volume="loud">
+    #         <emphasis level="strong">250908LN Protestas masivas en Europa contra Israel: 900 detenidos en Londres</emphasis>
+    #         </prosody>
+    #     </voice>
+        
+    #     <break time="2s"/>
+        
+    #     <voice name="es-US-Standard-A" gender="FEMALE">
+    #         <prosody rate="fast" volume="medium">
+    #         La policía metropolitana de Londres (MET) indicó que 857 personas fueron detenidas en cumplimiento de la ley antiterrorista, después de una protesta organizada el sábado en apoyo de una organización proscrita. Además, otras 33 personas fueron detenidas acusadas de atacar a agentes de policía y por otros delitos contra el orden público.
+    #         </prosody>
+    #     </voice>
+    #     </speak>"""
+    # se utilizan 3 comillas dobles para permitir saltos de línea y comillas simples dentro del texto
+
+
+# PASOS
+
+1. Importar el archivo de texto con subrayado amarillo
+2. Procesar y generar archivo de texto plano que tenga por contenido solo lo subrayado del archivo fuente
+3. Procesarlo a SSML format para generar de esta manera una "forma" de lectura
+4. Sintetizamos el archivo SSML y lo exportamos en un audio en formato ogg 
+5. Para casos donde el archivo sea pesado, ver si esto es por cantidad de caracteres o tamaño del archivo, generar varios procesos a la vez de traducción de audio. Para esto hay que:
+   
+   1. dividir el archivo en formato SSML en sub-archivos
+   2. levantar contenedores de docker por cada sub-proceso de sintetizacion en gcloud con text-to-speech asi se procesan en paralelo
+   3. tengo que tener un script en paralelo corriendo para que cuando terminen de procesar el archivo en todas sus secciones y se guarden en una carpeta, el proceso anterior envie un aviso a esta API que se encargue de "unir" todo el audio en un solo audio para exportar (formato .ogg )
+
+
+Notas: 
+   1. El título tiene que poder tomarse del archivo subrayado aunque este sin subrayar
+   2. El código del principio no es necesario que esté o hay que omitirlo de la lectura
+   3. 

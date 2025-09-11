@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<speak>
+    <voice name="es-US-Standard-B" gender="MALE">
+        <prosody rate="medium" volume="loud">
+        <emphasis level="strong">250908LN Protestas masivas en Europa contra Israel: 900 detenidos en Londres</emphasis>
+        </prosody>
+    </voice>
+    
+    <break time="2s"/>
+    
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="fast" volume="medium">
+        La policía metropolitana de Londres (MET) indicó que 857 personas fueron detenidas en cumplimiento de la ley antiterrorista, después de una protesta organizada el sábado en apoyo de una organización proscrita. Además, otras 33 personas fueron detenidas acusadas de atacar a agentes de policía y por otros delitos contra el orden público.
+        </prosody>
+    </voice>
+</speak>
