@@ -49,19 +49,22 @@ def synthesize_speech(text):
     }
     
     try:
+        # json.dumps convierte el diccionario data a una cadena JSON
         response = requests.post(url, headers=headers, data=json.dumps(data))
         # Después de la línea response = requests.post(...)
         if response.status_code != 200:
             print(f"Error {response.status_code}")
-            print("Respuesta completa:")
-            print(response.text)
             try:
+                # .json() intenta parsear la respuesta como JSON
                 error_details = response.json()
                 print("Detalles del error:")
                 print(json.dumps(error_details, indent=2))
-                response.raise_for_status()  # Lanza excepción para errores HTTP
+                # raise_for_status() lanza una excepción para códigos de estado HTTP 4xx/5xx
+                response.raise_for_status()  
             except:
                 print("No se pudo parsear la respuesta como JSON")
+                print("Respuesta completa:")
+                print(response.text)
                 
         return response.json()
     except requests.exceptions.RequestException as e:
@@ -70,8 +73,10 @@ def synthesize_speech(text):
 
 # Uso del script
 if __name__ == "__main__": # esto asegura que el código solo se ejecute cuando el script es ejecutado directamente
-        
     # obtener el texto a partir de un archivo SSML
+    path_salida = "/home/brian/Repositorio/app-generar-audio-portal-diario-ejes/diario_procesado/"
+    documento_salida = path_salida + "250911RT-SPK_resaltado.docx"
+
     try:
         with open("texto-ssml.xml", "r", encoding="utf-8") as file:
             TEXT = file.read()

@@ -103,4 +103,16 @@ Una vez inicializada la conexion y autenticacion con gcloud podremos ejecutar el
 Notas: 
    1. El título tiene que poder tomarse del archivo subrayado aunque este sin subrayar
    2. El código del principio no es necesario que esté o hay que omitirlo de la lectura
-   3. 
+
+
+
+## 250912
+
+### ver
+1. El diario procesado debe poder tomar los títulos de las notas en formato Haeding 1 y ponerlos al principio de la nota
+2. Si no tiene título en formato Heading 1 debe indicar un error en el momento de procesar el archivo indicando que el formato del diario no es el correcto. "Los títulos de cada nota deben comenzar por un título que tenga formato Heading 1"
+
+### hicimos
+1. Generamos una lista de objetos nota que nos ayudo a estructurar las propiedades de cada nota que componen el bodoque
+2. Distinguimos cada título en formato Heading 1 para diferenciar una nota de otra y poder tener una definicion clara de comienzo y fin de cada una
+3. Guardamos el contenido en el archivo iterando por la lista y nos aseguramos que se respeto el formato de titulo Heading 1 y el cuerpo de la nota que sea solo del texto resaltado
