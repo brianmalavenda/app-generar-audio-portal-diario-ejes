@@ -116,3 +116,22 @@ Notas:
 1. Generamos una lista de objetos nota que nos ayudo a estructurar las propiedades de cada nota que componen el bodoque
 2. Distinguimos cada título en formato Heading 1 para diferenciar una nota de otra y poder tener una definicion clara de comienzo y fin de cada una
 3. Guardamos el contenido en el archivo iterando por la lista y nos aseguramos que se respeto el formato de titulo Heading 1 y el cuerpo de la nota que sea solo del texto resaltado
+
+## 250915
+
+### ver
+1. El título en formato Heading 1 en el archivo de resultado se repite en la primer oracion del cuerpo de la nota, revisar para que no pase
+2. Post procesamiento y resultado final hay que reprocesarlo para convertirlo en formato SSML.
+   1. Encabezadao: <?xml version="1.0"?>
+        <speak>
+   2. Título: <voice name="es-US-Standard-B" gender="MALE">
+        <prosody rate="medium" volume="loud">
+        <emphasis level="strong">
+   3. Cuerpo: <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">
+   4. Cierre final: <speak>
+3. ver cantidad de caracteres resultante, cantidad de palabras, tiempo que tarda en procesar el archivo y   re-evaluar viabilidad del proyecto
+
+### hicimos
+
+   1. ver cantidad de caracteres resultante, cantidad de palabras, tiempo que tarda en procesar el archivo y   re-evaluar viabilidad del proyecto
