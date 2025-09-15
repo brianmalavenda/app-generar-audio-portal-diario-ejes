@@ -165,7 +165,7 @@ if __name__ == "__main__":
     documento_entrada = path_entrada + "test" + ".docx"  # Cambia por la ruta de tu documento
     path_salida = "/home/brian/Repositorio/app-generar-audio-portal-diario-ejes/diario_procesado/"
     documento_salida = path_salida + "test" + "resaltado" + ".docx"
-    path_salida = "/home/brian/Repositorio/app-generar-audio-portal-diario-ejes/diario_procesado/"
+    path_salida = "/home/brian/Repositorio/app-generar-audio-portal-diario-ejes/diario_ssml/"
     xml_salida = path_salida + "test" + "formato_ssml" + ".xml"
     
 

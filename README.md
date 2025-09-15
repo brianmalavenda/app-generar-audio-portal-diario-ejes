@@ -119,7 +119,7 @@ Notas:
 
 ## 250915
 
-### ver
+### hicimos
 1. El título en formato Heading 1 en el archivo de resultado se repite en la primer oracion del cuerpo de la nota, revisar para que no pase
 2. Post procesamiento y resultado final hay que reprocesarlo para convertirlo en formato SSML.
    1. Encabezadao: <?xml version="1.0"?>
@@ -130,8 +130,11 @@ Notas:
    3. Cuerpo: <voice name="es-US-Standard-A" gender="FEMALE">
         <prosody rate="medium" volume="medium">
    4. Cierre final: <speak>
-3. ver cantidad de caracteres resultante, cantidad de palabras, tiempo que tarda en procesar el archivo y   re-evaluar viabilidad del proyecto
+3. ver cantidad de caracteres resultante, cantidad de palabras, tiempo que tarda en procesar el archivo y re-evaluar viabilidad del proyecto
+4. Hay que crear una estructura de carpetas que sea coincidente con la arquitectura de la app. 
+   1. api
+   2. back
+   3. front
+5. Una vez que queda separada la api-gateway del back y del front, considero esta parte como otra app. Esto implica que tiene su propias variables de entorno, dependencias, file system, etc. Esto se traducirá en un contenedor docker que simulará otro servidor. Para eso primero creamos un dockerfile para crear la imagen de la app. Luego con un archivo docker-compose.yml podemos orquestar los contenedores y dejarlo listo para que al levantarlo podamos desde afuera acceder a la API desde http://localhost:8000
 
 ### hicimos
-
-   1. ver cantidad de caracteres resultante, cantidad de palabras, tiempo que tarda en procesar el archivo y   re-evaluar viabilidad del proyecto
