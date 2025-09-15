@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build: .
+    container_name: tts-api-gateway
+    ports:
+      - "8000:8000"   # Puerto host:container
+    env_file:
+      - .env          # Opcional: si usas variables de entorno
+    restart: unless-stopped # Reinicia el contenedor a menos que se detenga manualmente
+    networks: # Conexión a la red personalizada para comunicación entre contenedores
+      - tts-network
+
+networks:
+  tts-network:
+    driver: bridge
