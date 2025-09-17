@@ -137,4 +137,12 @@ Notas:
    3. front
 5. Una vez que queda separada la api-gateway del back y del front, considero esta parte como otra app. Esto implica que tiene su propias variables de entorno, dependencias, file system, etc. Esto se traducirá en un contenedor docker que simulará otro servidor. Para eso primero creamos un dockerfile para crear la imagen de la app. Luego con un archivo docker-compose.yml podemos orquestar los contenedores y dejarlo listo para que al levantarlo podamos desde afuera acceder a la API desde http://localhost:8000
 
-### hicimos
+
+## EJECUTAR CONTENEDORES
+
+sudo docker build -t backend-python-images .
+sudo docker build -t frontend-images .
+
+sudo docker run -it -p 5000:5000 -v $(pwd)/shared-data:/app/shared-files --name backend-container-api --network tts-network backend-python-images
+
+sudo docker run -it -p 3000:3000 --name frontend-container --network tts-network frontend-images

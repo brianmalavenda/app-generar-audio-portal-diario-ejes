@@ -1,7 +1,5 @@
-"use client"
-import { read } from "fs";
+"use client";
 import React, { useState, useCallback } from "react";
-import uploadFile from "./utils/saveFile"
 
 interface FileStats {
   size: string;
@@ -9,64 +7,61 @@ interface FileStats {
   characters: number;
 }
 
-const App: React.FC = async () => {
+const App: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [uploadStatus, setUploadStatus] = useState<string>('');
   const [fileStats, setFileStats] = useState<FileStats | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadMessage, setUploadMessage] = useState<string>("");
 
-  const handleFileChange = useCallback((selectedFile: File) => {
-    if (!selectedFile) return;
-    
-    setFile(selectedFile);
-    
+  const uploadFileToBackend = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const message = await response.text();
+        setUploadMessage(`Archivo subido correctamente: ${message}`);
+        return true;
+      } else {
+        setUploadMessage(`Error en la subida: ${response.statusText}`);
+        return false;
+      }
+    } catch (error) {
+      setUploadMessage(`Error de red: ${error}`);
+      return false;
+    }
+  };
+
+  const processFileForStats = useCallback((selectedFile: File) => {
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = (e) => {
       try {
-        // This is a simplified version - in a real app, you would need a library like mammoth.js
-        // to properly parse Word documents, but we're simulating the functionality here
         const content = e.target?.result;
         const textContent = typeof content === 'string' ? content : '';
         
-        // Simulate word and character count (in a real app, this would come from parsing the .docx file)
         const words = textContent.split(/\s+/).filter(word => word.length > 0).length;
         const characters = textContent.length;
         
         setFileStats({
           size: (selectedFile.size / (1024 * 1024)).toFixed(2),
-          words: Math.floor(Math.random() * 1000) + 100, // Simulated word count
-          characters: Math.floor(Math.random() * 5000) + 500, // Simulated character count
+          words: words,
+          characters: characters,
         });
-
-        try {
-          const formData = new FormData();
-          formData.append('file', selectedFile);
-
-          const response = await fetch('http://localhost:5000/api/upload', {
-            method: 'POST',
-            body: formData,
-          });
-
-          if (response.ok) {
-            const message = await response.text();
-            setUploadStatus(`Éxito: ${message}`);
-          } else {
-            setUploadStatus(`Error: ${response.statusText}`);
-          }
-        } catch (error) {
-          setUploadStatus(`Error de red: ${error}`);
-        }
-
       } catch (error) {
-        console.error("Error processing file:", error);
+        console.error("Error procesando archivo para estadísticas:", error);
       }
     };
     
-    // For text files, we can read as text. For .docx, this won't work properly without a library
     if (selectedFile.type === 'text/plain') {
       reader.readAsText(selectedFile);
     } else {
-      // Simulate processing for .docx files
+      // Simular procesamiento para archivos .docx
       setTimeout(() => {
         setFileStats({
           size: (selectedFile.size / (1024 * 1024)).toFixed(2),
@@ -76,6 +71,23 @@ const App: React.FC = async () => {
       }, 500);
     }
   }, []);
+
+  const handleFileChange = useCallback(async (selectedFile: File) => {
+    if (!selectedFile) return;
+    
+    setFile(selectedFile);
+    setFileStats(null);
+    setUploadMessage("");
+    setIsUploading(true);
+
+    // Procesar estadísticas en paralelo
+    processFileForStats(selectedFile);
+
+    // Subir el archivo inmediatamente al backend
+    await uploadFileToBackend(selectedFile);
+    
+    setIsUploading(false);
+  }, [processFileForStats]);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -93,10 +105,10 @@ const App: React.FC = async () => {
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const selectedFile = e.dataTransfer.files[0];
-      if (selectedFile.name.endsWith('.docx') || selectedFile.name.endsWith('.doc')) {
+      if (selectedFile.name.endsWith('.docx') || selectedFile.name.endsWith('.doc') || selectedFile.type === 'text/plain') {
         handleFileChange(selectedFile);
       } else {
-        alert('Por favor, seleccione un archivo Word (.doc o .docx)');
+        alert('Por favor, seleccione un archivo Word (.doc, .docx) o texto (.txt)');
       }
     }
   }, [handleFileChange]);
@@ -104,10 +116,10 @@ const App: React.FC = async () => {
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      if (selectedFile.name.endsWith('.docx') || selectedFile.name.endsWith('.doc')) {
+      if (selectedFile.name.endsWith('.docx') || selectedFile.name.endsWith('.doc') || selectedFile.type === 'text/plain') {
         handleFileChange(selectedFile);
       } else {
-        alert('Por favor, seleccione un archivo Word (.doc o .docx)');
+        alert('Por favor, seleccione un archivo Word (.doc, .docx) o texto (.txt)');
       }
     }
   }, [handleFileChange]);
@@ -151,12 +163,12 @@ const App: React.FC = async () => {
                 Seleccionar archivo
                 <input 
                   type="file" 
-                  accept=".doc,.docx" 
+                  accept=".doc,.docx,.txt" 
                   onChange={handleFileInput}
                   className="hidden"
                 />
               </label>
-              <p className="text-sm text-gray-500 mt-4">Formatos soportados: .doc, .docx</p>
+              <p className="text-sm text-gray-500 mt-4">Formatos soportados: .doc, .docx, .txt</p>
             </>
           ) : (
             <div className="space-y-6">
@@ -167,6 +179,22 @@ const App: React.FC = async () => {
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-800">{file.name}</h3>
+                
+                {isUploading && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="ml-2 text-gray-600">Subiendo archivo...</span>
+                    </div>
+                  </div>
+                )}
+                
+                {uploadMessage && (
+                  <div className={`mt-4 p-3 rounded-lg ${uploadMessage.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                    {uploadMessage}
+                  </div>
+                )}
+                
                 {fileStats && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 w-full max-w-md">
                     <div className="bg-white rounded-lg p-4 shadow-sm border">
@@ -188,7 +216,8 @@ const App: React.FC = async () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
                 <button
                   onClick={handleExportToAudio}
-                  className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center"
+                  disabled={isUploading}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m0-9.9a5 5 0 011.414-1.414M9 17.072a7 7 0 002.828-2.828M9 17.072V19a2 2 0 002 2h2a2 2 0 002-2v-1.928" />
@@ -197,7 +226,8 @@ const App: React.FC = async () => {
                 </button>
                 <button
                   onClick={handleDownloadText}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center"
+                  disabled={isUploading}
+                  className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-medium py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -210,8 +240,10 @@ const App: React.FC = async () => {
                 onClick={() => {
                   setFile(null);
                   setFileStats(null);
+                  setUploadMessage("");
                 }}
-                className="mt-4 text-blue-600 hover:text-blue-800 font-medium transition duration-300"
+                disabled={isUploading}
+                className="mt-4 text-blue-600 hover:text-blue-800 disabled:text-gray-500 font-medium transition duration-300"
               >
                 Cargar otro archivo
               </button>

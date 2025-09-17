@@ -10,3 +10,8 @@ kubernetes==29.0.0
 python-dotenv==1.0.1  # para cargar tokens desde .env
 pydantic==2.10.0      # opcional, si quieres validar respuestas con modelos
 loguru==0.7.2         # para logs bonitos (opcional)
+fastapi==0.115.0
+uvicorn==0.34.0
+python-multipart==0.0.12
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4

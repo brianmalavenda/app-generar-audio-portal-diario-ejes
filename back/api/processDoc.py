@@ -2,27 +2,9 @@
 from docx import Document
 from docx.enum.text import WD_COLOR_INDEX
 import os
+# If you want to pretty-print the XML (add indentation and line breaks),
+# you can use xml.dom.minidom
 import xml.dom.minidom
-from flask import Flask, request, jsonify
-import os
-
-app = Flask(__name__)
-SAVE_FOLDER = os.getenv("SAVE_FOLDER")
-
-@app.route('/api/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
-        return 'No file uploaded', 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return 'No file selected', 400
-    
-    # Guardar el archivo en la carpeta destino
-    file_path = os.path.join(SAVE_FOLDER, file.filename)
-    file.save(file_path)
-    
-    return 'File uploaded successfully', 200
 
 class Heading1NotFoundException(Exception):
     """Excepción personalizada para cuando no se encuentra un Heading 1"""
@@ -175,61 +157,3 @@ def convertir_a_formato_ssml(input_path,output_path):
         return [cantidad_palabras, cantidad_caracteres]
     except Exception as e:
         print(f"Error al convertir a SSML: {str(e)}")
-
-
-@app.route('/api/processfile', methods=['POST'])
-def process_file():
-    path_entrada = "app/shared-files/diario_pintado/"
-    # documento_entrada = path_entrada + "test" + ".docx"  # Cambia por la ruta de tu documento
-    path_salida = "app/shared-files/diario_procesado/"
-    # documento_salida = path_salida + "test" + "resaltado" + ".docx"
-    path_salida = "app/shared-files/diario_ssml/"
-    # xml_salida = path_salida + "test" + "formato_ssml" + ".xml"
-
-    extraer_texto_resaltado(documento_entrada, documento_salida)
-    palabras_caracteres = convertir_a_formato_ssml(documento_salida, xml_salida)
-    tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(xml_salida)
-    return jsonify({"status": "OK", "Cantidad de palabras en SSML:": palabras_caracteres[0], "Cantidad de caracteres en SSML": palabras_caracteres[1], "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo })
-
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    return jsonify({"status": "OK", "message": "API funcionando"})
-
-@app.route('/api/files/<filename>', methods=['GET'])
-def get_file(filename):
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
-    if not os.path.exists(file_path):
-        return jsonify({"error": "Archivo no encontrado"}), 404
-    
-    return jsonify({
-        "filename": filename,
-        "content": open(file_path, 'r').read()
-    })
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
-
-# if __name__ == "__main__":
-#     # Configurar rutas de entrada y salida
-#     # este documento lo ingresa el usuario y el documento de salida tendra el mismo nombre pero con _resaltado
-#     path_entrada = "/home/brian/Repositorio/app-generar-audio-portal-diario-ejes/diario_pintado/"
-#     documento_entrada = path_entrada + "test" + ".docx"  # Cambia por la ruta de tu documento
-#     path_salida = "/home/brian/Repositorio/app-generar-audio-portal-diario-ejes/diario_procesado/"
-#     documento_salida = path_salida + "test" + "resaltado" + ".docx"
-#     path_salida = "/home/brian/Repositorio/app-generar-audio-portal-diario-ejes/diario_ssml/"
-#     xml_salida = path_salida + "test" + "formato_ssml" + ".xml"
-    
-
-#     # Verificar si el archivo de entrada existe
-#     if not os.path.exists(documento_entrada):
-#         print(f"Error: El archivo {documento_entrada} no existe.")
-#     else:
-#         # Ejecutar la función principal
-#         extraer_texto_resaltado(documento_entrada, documento_salida)
-#         palabras_caracteres = convertir_a_formato_ssml(documento_salida, xml_salida)
-#         tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(xml_salida)
-
-#         print(f"Cantidad de palabras en SSML: {palabras_caracteres[0]}")
-#         print(f"Cantidad de caracteres en SSML: {palabras_caracteres[1]}")
-#         print(f"Tamaño del archivo SSML en megabytes: {tamanio_megabytes_archivo}")
-
