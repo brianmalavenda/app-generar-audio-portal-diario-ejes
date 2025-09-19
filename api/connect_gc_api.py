@@ -75,28 +75,28 @@ def synthesize_speech(text):
         return None
 
 # Uso del script
-if __name__ == "__main__": # esto asegura que el código solo se ejecute cuando el script es ejecutado directamente
-    # obtener el texto a partir de un archivo SSML
-    path_salida = "/home/brian/Repositorio/app-generar-audio-portal-diario-ejes/diario_procesado/"
-    documento_salida = path_salida + "250911RT-SPK_resaltado.docx"
+# if __name__ == "__main__": # esto asegura que el código solo se ejecute cuando el script es ejecutado directamente
+#     # obtener el texto a partir de un archivo SSML
+#     path_salida = "app/shared_file/diario_ssml/"
+#     documento_salida = path_salida + "250911RT-SPK_resaltado.docx"
 
-    try:
-        with open("texto-ssml.xml", "r", encoding="utf-8") as file:
-            TEXT = file.read()
-            print("Contenido SSML leído:")
-            print(TEXT)
-    except Exception as e:
-        print(f"Error leyendo archivo XML: {e}")
-        exit(1)
+#     try:
+#         with open("texto-ssml.xml", "r", encoding="utf-8") as file:
+#             TEXT = file.read()
+#             print("Contenido SSML leído:")
+#             print(TEXT)
+#     except Exception as e:
+#         print(f"Error leyendo archivo XML: {e}")
+#         exit(1)
 
-    result = synthesize_speech(TEXT)
+#     result = synthesize_speech(TEXT)
     
-    if result and 'audioContent' in result:
-        # Decodificar el contenido base64 y guardar como MP3
-        import base64
-        audio_data = base64.b64decode(result['audioContent'])
-        with open("test03-ssml-to-speech.ogg", "wb") as audio_file:
-            audio_file.write(audio_data)
-        print("Audio guardado en formato .ogg")
-    else:
-        print("Error en la síntesis de voz")
+#     if result and 'audioContent' in result:
+#         # Decodificar el contenido base64 y guardar como MP3
+#         import base64
+#         audio_data = base64.b64decode(result['audioContent'])
+#         with open("test03-ssml-to-speech.ogg", "wb") as audio_file:
+#             audio_file.write(audio_data)
+#         print("Audio guardado en formato .ogg")
+#     else:
+#         print("Error en la síntesis de voz")

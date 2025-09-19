@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<speak>
+    <voice name="es-US-Standard-B" gender="MALE">
+        <prosody rate="medium" volume="loud">
+            <emphasis level="strong">Cuba Debate</emphasis>
+        </prosody>
+    </voice>
+    
+
+</speak>

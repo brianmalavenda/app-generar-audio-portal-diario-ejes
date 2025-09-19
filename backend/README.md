@@ -8,4 +8,4 @@ docker images
 
 # Ejecutar un contenedor a partir de la imagen creada
 
-docker run -d -p 5000:5000 -v $(pwd)/shared-data:/app/shared-files --name backend-container-api  backend-python-api
+docker run -d -p 5000:5000 -v shared-data:/app/shared-files --name backend-container-api  backend-python-api

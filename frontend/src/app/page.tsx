@@ -26,10 +26,10 @@ const App: React.FC = () => {
 
       if (response.ok) {
         const message = await response.text();
-        setUploadMessage(`Archivo subido correctamente: ${message}`);
+        setUploadMessage(`${message}`);
         return true;
       } else {
-        setUploadMessage(`Error en la subida: ${response.statusText}`);
+        setUploadMessage(`${response.statusText}`);
         return false;
       }
     } catch (error) {
@@ -124,20 +124,59 @@ const App: React.FC = () => {
     }
   }, [handleFileChange]);
 
-  const handleExportToAudio = () => {
+  const generateAudio = async (filename: string) => {
+  try {
+    const response = await fetch('http://localhost:5000/api/generateaudio', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ filename }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Audio generado:', data);
+      return data;
+    } else {
+      console.error('Error generando audio:', response.statusText);
+      throw new Error('Error generando audio');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+};
+
+  const handleExportToAudio = async () => {
     alert('Función de exportar a audio - En una implementación real, esto se comunicaría con el backend Python'); 
+    await generateAudio(file.name)
   };
 
-  const handleDownloadText = () => {
-    alert('Función de descargar solo texto - En una implementación real, esto descargaría el texto extraído del documento');
+  const handleDownloadText = async(filename: string) => {
+    // Para descargar un archivo        
+        const response = await fetch(`http://localhost:5000/api/descargar_doc_procesado?filename=${filename}`);
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } else {
+            console.error('Error al descargar el archivo');
+        }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-4xl mx-auto py-12">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">Procesador de Documentos Word</h1>
-          <p className="text-lg text-gray-600">Carga tu archivo Word para analizarlo y exportarlo</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">Portal de envio de diarios</h1>
+          <p className="text-lg text-gray-600">Carga tu archivo Word pintado, se procesará para extraer lo subrayado y se generará un audio listo para compartir por telegram o descargar</p>
         </div>
 
         <div 
@@ -215,7 +254,8 @@ const App: React.FC = () => {
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
                 <button
-                  onClick={handleExportToAudio}
+                  // onClick={handleExportToAudio}
+                  onClick={() => generateAudio(file.name)}
                   disabled={isUploading}
                   className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center"
                 >
@@ -225,7 +265,7 @@ const App: React.FC = () => {
                   Exportar a audio
                 </button>
                 <button
-                  onClick={handleDownloadText}
+                  onClick={() => handleDownloadText(file.name)}
                   disabled={isUploading}
                   className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-medium py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center"
                 >
@@ -249,10 +289,6 @@ const App: React.FC = () => {
               </button>
             </div>
           )}
-        </div>
-
-        <div className="mt-12 text-center text-sm text-gray-500">
-          <p>Nota: Esta es una demostración frontend. En una implementación real, se necesitaría un backend en Python para procesar archivos .docx y generar audio.</p>
         </div>
       </div>
     </div>
