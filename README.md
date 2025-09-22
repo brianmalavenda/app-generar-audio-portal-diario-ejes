@@ -143,6 +143,20 @@ Notas:
 sudo docker build -t backend-python-images .
 sudo docker build -t frontend-images .
 
-sudo docker run -it -p 5000:5000 -v $(pwd)/shared-data:/app/shared-files --name backend-container-api --network tts-network backend-python-images
+<!-- creamos la red bridge para comunicarse entre contenedores -->
+docker network create tts-network
 
-sudo docker run -it -p 3000:3000 --name frontend-container --network tts-network frontend-images
+docker run -it -p 5000:5000 -v $(pwd)/shared-data:app/shared-files --name backend-container-api  --network tts-network backend-python-images
+
+docker run -it -p 3000:3000 --name frontend-container --network tts-network frontend-images
+
+<!-- entrar dentro de mi contenedor -->
+docker exec -it backend-container-api /bin/bash
+<!-- buscar un archivo -->
+docker exec nombre_de_tu_contenedor find / -name "*.txt" 2>/dev/null
+
+docker volumen ls
+
+
+docker stop $(docker ps -aq) && docker rm $(docker ps -aq) && docker rmi $(docker images -q) 
+&& rmdir shared-data

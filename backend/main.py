@@ -3,11 +3,31 @@ from docx import Document
 from docx.enum.text import WD_COLOR_INDEX
 import os
 import xml.dom.minidom
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS  # Importa la extensión CORS
 import os
+import time
+import json
 
 app = Flask(__name__)
-SAVE_FOLDER = os.getenv("SAVE_FOLDER")
+# Usar ruta absoluta con valor por defecto
+SAVE_FOLDER = os.getenv('SAVE_FOLDER', '/app/shared-files/diario_pintado/')
+# Configura CORS para permitir solicitudes desde localhost:3000
+CORS(app, origins=["http://localhost:3000"])
+# Probar CORS: curl -I -X OPTIONS http://localhost:5000/api/upload
+os.makedirs(SAVE_FOLDER, exist_ok=True)
+print(f"Directorio de guardado: {SAVE_FOLDER}")
+# Con esto agregaríamos manualmente el permiso de ese origen a navegar nuestro back
+# @app.after_request
+# def after_request(response):
+#     response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
+#     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+#     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+#     return response
+
+class Heading1NotFoundException(Exception):
+    """Excepción personalizada para cuando no se encuentra un Heading 1"""
+    pass
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
@@ -18,22 +38,47 @@ def upload_file():
     if file.filename == '':
         return 'No file selected', 400
     
-    # Guardar el archivo en la carpeta destino
-    file_path = os.path.join(SAVE_FOLDER, file.filename)
-    file.save(file_path)
-    
-    return 'File uploaded successfully', 200
+    # Asegurarse de que el directorio existe (por si acaso)
+    os.makedirs(SAVE_FOLDER, exist_ok=True)
 
-class Heading1NotFoundException(Exception):
-    """Excepción personalizada para cuando no se encuentra un Heading 1"""
-    pass
+    file_path = os.path.join(SAVE_FOLDER, file.filename)
+    print(f"Guardando archivo en: {file_path}")
+    file.save(file_path)
+    print(f"El archivo se llama: {file.filename}")
+
+    filename_sin_extension = file.filename.split('.')
+    
+    nombre_archivo_procesado = "procesado_" + filename_sin_extension[0] + ".docx"
+    print(f"Nombre de mi archivo procesado {nombre_archivo_procesado}")
+    documento_salida = os.path.join('/app/shared-files/diario_procesado/', nombre_archivo_procesado)
+ 
+    nombre_archivo_ssml = "ssml_" + filename_sin_extension[0] + ".xml"
+    print(f"Nombre de mi archivo ssml {nombre_archivo_ssml}")
+    xml_salida = os.path.join('/app/shared-files/diario_ssml/', nombre_archivo_ssml)
+    
+    extraer_texto_resaltado(file_path, documento_salida)
+    print("Procese el documento y extraje lo resaltado, vamos bien")
+    palabras_caracteres = convertir_a_formato_ssml(documento_salida, xml_salida)
+    tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(xml_salida)
+    print ({"status": "OK", "Cantidad de palabras en SSML:": palabras_caracteres[0], "Cantidad de caracteres en SSML": palabras_caracteres[1], "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo })
+    
+    return 'Archivo guardado', 200
+
+@app.route('/api/descargar_doc_procesado', methods=['GET'])
+def descargar_doc_procesado():
+    filename = request.args.get('filename')
+    new_filename = 'procesado_'+filename
+    file_path = os.path.join('/app/shared-files/diario_procesado', new_filename)
+    if not os.path.isfile(file_path):
+        return 'No existe el archivo que estas buscando', 404
+    return send_file(file_path, as_attachment=True)
 
 def extraer_texto_resaltado(input_path, output_path):
     """
     Extrae texto resaltado en amarillo de un documento Word y lo guarda en un nuevo documento.
     Args:
         input_path (str): Ruta al documento Word de entrada (.docx)
-        output_path (str): Ruta donde se guardará el nuevo documento con el texto extraído
+        output_dir (str): Directorio donde se guardará el nuevo documento con el texto extraído
     """
     try:
         # Cargar el documento
@@ -77,17 +122,25 @@ def extraer_texto_resaltado(input_path, output_path):
                             'indice': len(nota[contador_notas]['cuerpo']) + 1,
                             'texto': texto_resaltado
                         })                                          
-        # la nota esta completa, antes de continuar con el siguiente párrafo, guardamos la nota en el nuevo documento
+        
+        # Guardar las notas en el nuevo documento
         for nota_a_guardar in nota:
             nuevo_doc.add_heading(nota_a_guardar["titulo"], level=1)
             for parrafo in nota_a_guardar["cuerpo"]:
                 nuevo_doc.add_paragraph(f"{parrafo['texto']}")                
+        
+        # Guardar el documento
         nuevo_doc.save(output_path)
+
         print(f"¡Proceso completado! Texto extraído guardado en: {output_path}")
+        return output_path  # Devolver la ruta del archivo guardado
+        
     except Heading1NotFoundException as e:
         print(f"Error: {str(e)}")
+        raise
     except Exception as e:
         print(f"Error al procesar el documento: {str(e)}")
+        raise
 
 def contar_cantidad_de_palabras(texto):
     """
@@ -177,19 +230,40 @@ def convertir_a_formato_ssml(input_path,output_path):
         print(f"Error al convertir a SSML: {str(e)}")
 
 
+@app.route('/api/generateaudio', methods=['POST'])
+def generate_audio():
+    # Obtener el nombre del archivo del cuerpo de la solicitud
+    filename = data['filename']
+    file_path = os.path.join(SAVE_FOLDER, filename)
+
+    # Verificar que el archivo existe
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+
+    # Aquí iría la lógica para procesar el archivo y generar el audio
+    # Por ahora, solo simulamos el procesamiento
+
+    # Simulamos un retardo de procesamiento
+    # time.sleep(2)  # Descomenta si quieres simular un retardo
+
+    # return jsonify({'message': 'Audio generated successfully', 'filename': filename}), 200
+    return send_file(file_path, as_attachment=True)
+
 @app.route('/api/processfile', methods=['POST'])
 def process_file():
-    path_entrada = "app/shared-files/diario_pintado/"
-    # documento_entrada = path_entrada + "test" + ".docx"  # Cambia por la ruta de tu documento
-    path_salida = "app/shared-files/diario_procesado/"
-    # documento_salida = path_salida + "test" + "resaltado" + ".docx"
-    path_salida = "app/shared-files/diario_ssml/"
-    # xml_salida = path_salida + "test" + "formato_ssml" + ".xml"
+    print(request.get("filanme"))
+    # path_entrada = "shared-files/diario_pintado/"
+    # # documento_entrada = path_entrada + "test" + ".docx"  # Cambia por la ruta de tu documento
+    # path_salida = "shared-files/diario_procesado/"
+    # # documento_salida = path_salida + "test" + "resaltado" + ".docx"
+    # path_salida = "shared-files/diario_ssml/"
+    # # xml_salida = path_salida + "test" + "formato_ssml" + ".xml"
 
-    extraer_texto_resaltado(documento_entrada, documento_salida)
-    palabras_caracteres = convertir_a_formato_ssml(documento_salida, xml_salida)
-    tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(xml_salida)
-    return jsonify({"status": "OK", "Cantidad de palabras en SSML:": palabras_caracteres[0], "Cantidad de caracteres en SSML": palabras_caracteres[1], "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo })
+    # extraer_texto_resaltado(documento_entrada, documento_salida)
+    # palabras_caracteres = convertir_a_formato_ssml(documento_salida, xml_salida)
+    # tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(xml_salida)
+    # return jsonify({"status": "OK", "Cantidad de palabras en SSML:": palabras_caracteres[0], "Cantidad de caracteres en SSML": palabras_caracteres[1], "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo })
+    return jsonify({"status": "OK", "message": "Estamos en procesar audio"})
 
 @app.route('/api/health', methods=['GET'])
 def health_check():

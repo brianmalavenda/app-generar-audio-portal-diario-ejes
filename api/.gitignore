@@ -1,0 +1,6 @@
+# Credenciales y secretos
+!package.json
+secrets/
+credentials/
+.env
+service-account-key.json
