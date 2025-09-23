@@ -160,3 +160,21 @@ docker volumen ls
 
 docker stop $(docker ps -aq) && docker rm $(docker ps -aq) && docker rmi $(docker images -q) 
 && rmdir shared-data
+
+
+docker build -t frontend:latest ./frontend
+docker build -t backend:latest ./backend
+docker build -t api-proxy:latest ./api-proxy
+
+# En tu servidor, en la carpeta del proyecto
+### deploy.sh
+
+docker swarm init
+docker secret create google_credentials cred/google-credentials.json
+docker stack deploy -c docker-compose.yml tu-app
+
+# En tu servidor, una sola vez:
+cd ~/Repositorio/app-generar-audio-portal-diario-ejes
+docker swarm init
+docker secret create google_credentials api/cred/google-credentials.json
+docker stack deploy -c docker-compose.yml audio-app

@@ -4,6 +4,7 @@ from docx.enum.text import WD_COLOR_INDEX
 import os
 import xml.dom.minidom
 from flask import Flask, request, jsonify, send_file
+import requests
 from flask_cors import CORS  # Importa la extensión CORS
 import os
 import time
@@ -14,16 +15,8 @@ app = Flask(__name__)
 SAVE_FOLDER = os.getenv('SAVE_FOLDER', '/app/shared-files/diario_pintado/')
 # Configura CORS para permitir solicitudes desde localhost:3000
 CORS(app, origins=["http://localhost:3000"])
-# Probar CORS: curl -I -X OPTIONS http://localhost:5000/api/upload
 os.makedirs(SAVE_FOLDER, exist_ok=True)
 print(f"Directorio de guardado: {SAVE_FOLDER}")
-# Con esto agregaríamos manualmente el permiso de ese origen a navegar nuestro back
-# @app.after_request
-# def after_request(response):
-#     response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
-#     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-#     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-#     return response
 
 class Heading1NotFoundException(Exception):
     """Excepción personalizada para cuando no se encuentra un Heading 1"""
@@ -229,56 +222,26 @@ def convertir_a_formato_ssml(input_path,output_path):
     except Exception as e:
         print(f"Error al convertir a SSML: {str(e)}")
 
-
-@app.route('/api/generateaudio', methods=['POST'])
-def generate_audio():
+@app.route('/api/generar_audio/<filename>', methods=['POST'])
+def generar_audio(filename):
     # Obtener el nombre del archivo del cuerpo de la solicitud
-    filename = data['filename']
+    base_url = "http://localhost:5001/"
+    url = base_url + filename
+    # filename = request.get_json()['filename']
     file_path = os.path.join(SAVE_FOLDER, filename)
 
     # Verificar que el archivo existe
     if not os.path.exists(file_path):
         return jsonify({'error': 'File not found'}), 404
 
-    # Aquí iría la lógica para procesar el archivo y generar el audio
-    # Por ahora, solo simulamos el procesamiento
-
-    # Simulamos un retardo de procesamiento
-    # time.sleep(2)  # Descomenta si quieres simular un retardo
+    response = requests.post(url)
 
     # return jsonify({'message': 'Audio generated successfully', 'filename': filename}), 200
     return send_file(file_path, as_attachment=True)
 
-@app.route('/api/processfile', methods=['POST'])
-def process_file():
-    print(request.get("filanme"))
-    # path_entrada = "shared-files/diario_pintado/"
-    # # documento_entrada = path_entrada + "test" + ".docx"  # Cambia por la ruta de tu documento
-    # path_salida = "shared-files/diario_procesado/"
-    # # documento_salida = path_salida + "test" + "resaltado" + ".docx"
-    # path_salida = "shared-files/diario_ssml/"
-    # # xml_salida = path_salida + "test" + "formato_ssml" + ".xml"
-
-    # extraer_texto_resaltado(documento_entrada, documento_salida)
-    # palabras_caracteres = convertir_a_formato_ssml(documento_salida, xml_salida)
-    # tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(xml_salida)
-    # return jsonify({"status": "OK", "Cantidad de palabras en SSML:": palabras_caracteres[0], "Cantidad de caracteres en SSML": palabras_caracteres[1], "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo })
-    return jsonify({"status": "OK", "message": "Estamos en procesar audio"})
-
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "OK", "message": "API funcionando"})
-
-@app.route('/api/files/<filename>', methods=['GET'])
-def get_file(filename):
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
-    if not os.path.exists(file_path):
-        return jsonify({"error": "Archivo no encontrado"}), 404
-    
-    return jsonify({
-        "filename": filename,
-        "content": open(file_path, 'r').read()
-    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

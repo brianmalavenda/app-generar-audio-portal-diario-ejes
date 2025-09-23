@@ -1,9 +1,14 @@
 from dotenv import load_dotenv
 import os
+from flask import Flask, request, jsonify, send_file
 from fastapi import FastAPI, Depends, HTTPException, status, request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
-from gcloud_SA_access import get_access_token, get_project_id, synthesize_speech
+from flask_cors import CORS  
+from gcloud_SA_access import get_access_token_service_account, get_project_id_service_account, synthesize_speech
+
+app = Flask(__name__)
+CORS(app, origins=["http://localhost:3000"])
 
 load_dotenv()
 API_URL = os.getenv("API_URL")
@@ -18,9 +23,9 @@ class TextToSpeechRequest(BaseModel):
 
 app = FastAPI(title="Mi API Intermedia para Google TTS")
 
-
-@app.route('/api-proxy/getaudio', methods=['GET'])
-def get_audio():
+## Este endpoint recibe un nombre de archivo por parametro ?filename=ssml_test_03.xml
+@app.route('/api/generar_audio', methods=['POST'])
+def generar_audio():
     filename = request.args.get('filename')
     if not filename:
         return "Filename es requerido", 400
@@ -44,7 +49,7 @@ def get_audio():
     if not token or not project_id:
         return "Error de autenticación con Google Cloud", 500
 
-    result = synthesize_speech(text_ssml)
+    result = synthesize_speech(text_ssml, token, project_id)
     
     if result and 'audioContent' in result:
         try:
@@ -52,15 +57,15 @@ def get_audio():
             audio_data = base64.b64decode(result['audioContent'])
             
             # Crear nombre de archivo para el audio
-            audio_filename = f"audio_{os.path.splitext(filename)[0]}.ogg"
-            audio_path = os.path.join("/app/shared-files/diario_pintado/", audio_filename)
+            audio_filename = f"{os.path.splitext(filename)[0]}.ogg"
+            audio_path = os.path.join("/app/shared-files/audios/", audio_filename)
             
             # Guardar archivo de audio
             with open(audio_path, "wb") as audio_file:
                 audio_file.write(audio_data)
             print(f"Audio guardado en: {audio_path}")
             
-            # Devolver el archivo de audio
+            # Devolver el archivo de audio para descargar
             return send_file(audio_path, as_attachment=True, download_name=audio_filename)
             
         except Exception as e:

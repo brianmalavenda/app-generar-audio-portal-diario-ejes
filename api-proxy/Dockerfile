@@ -27,11 +27,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar el código de la aplicación
 COPY . .
 
-# Crear directorios necesarios
-RUN mkdir -p /app/shared-files/diario_pintado && \
-    mkdir -p /app/shared-files/diario_procesado && \
-    mkdir -p /app/shared-files/diario_ssml
-
 # Exponer puerto
 EXPOSE 5000
 

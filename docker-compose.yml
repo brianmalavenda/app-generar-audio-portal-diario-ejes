@@ -1,48 +1,45 @@
 version: '3.8'
 
 services:
-  api-gateway:
-    build: ./api
-    container_name: tts-api-gateway
+  frontend:
+    image: frontend:latest  # Cambiar build por image
     ports:
-      - "8000:8000"   # Puerto host:container
-    env_file:
-      - .env          # Opcional: si usas variables de entorno
-    volumes:
-      - shared-data:/data # [nombre del volumen]:[nombre de la ruta del contenedor]
-    restart: unless-stopped # Reinicia el contenedor a menos que se detenga manualmente
-    networks: # Conexión a la red personalizada para comunicación entre contenedores
+      - "3000:3000"
+    networks:
       - tts-network
+
   backend:
-    build: ./backend-container-api  # Directorio con tu backend Python
-    container_name: tts-frontend
+    image: backend:latest
     ports:
       - "5000:5000"
     volumes:
-      - shared-data:/data # [nombre del volumen]:[nombre de la ruta del contenedor], el data de este servicio no es el mismo data de api-gateway
-    # volumes:
-    #   - ./destino:/app/destino  # Montar volumen para guardar archivos
-    networks:
-      - tts-network
-  frontend:
-    build: ./frontend-container
-    container_name: tts-frontend
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
+      - shared-data:/app/shared-files
     networks:
       - tts-network
 
-# Volumen compartido
+  api-proxy:
+    image: api-proxy:latest
+    ports:
+      - "5001:5000"
+    volumes:
+      - shared-data:/app/shared-files
+    networks:
+      - tts-network
+    secrets:
+      - google_credentials
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google_credentials
+    depends_on:
+      - backend
+
 volumes:
   shared-data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./shared-data  # Almacenamiento en el host
 
 networks:
   tts-network:
-    driver: bridge
+    driver: overlay  # Cambiar a overlay para Swarm
+
+secrets:
+  google_credentials:
+    external: true

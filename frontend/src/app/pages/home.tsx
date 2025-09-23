@@ -11,6 +11,25 @@ const App: React.FC = () => {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [fileStats, setFileStats] = useState<FileStats | null>(null);
 
+  /**
+   * Se dispara cuando un elemento arrastrado ENTREA al área de drop.
+   */
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  /**
+   * Se dispara cuando un elemento arrastrado SALE del área de drop.
+   */
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  /**
+   * Es cargado un archivo finalmente por arrastre o por el input de carga
+   */
   const handleFileChange = useCallback((selectedFile: File) => {
     if (!selectedFile) return;
     
@@ -52,17 +71,10 @@ const App: React.FC = () => {
       }, 500);
     }
   }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-
+  
+  /**
+   * Se dispara cuando el usuario SUELTA (drop) el archivo sobre el área.
+   */
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
