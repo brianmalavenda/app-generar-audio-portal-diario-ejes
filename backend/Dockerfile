@@ -21,7 +21,5 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Exponer puerto (FastAPI por defecto en 5000)
 EXPOSE 5000
 
-# Comando para ejecutar la app
-# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
 ENTRYPOINT [ "docker-entrypoint.sh" ]
 CMD ["python", "main.py"]

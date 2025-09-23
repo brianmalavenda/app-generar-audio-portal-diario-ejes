@@ -1,10 +1,15 @@
 #!/bin/bash
-set -e  # Detiene el script si ocurre algún error
+set -e
 
-# Crear directorios necesarios
+# Crear directorios necesarios en el volumen compartido
 mkdir -p /app/shared-files/diario_pintado
 mkdir -p /app/shared-files/diario_procesado
 mkdir -p /app/shared-files/diario_ssml
+mkdir -p /app/shared-files/audio
 
-# Ejecutar el comando pasado como argumento (en este caso, "python main.py")
+# Verificar que los directorios se crearon
+echo "Directorios creados en: /app/shared-files/"
+ls -la /app/shared-files/
+
+# Ejecutar el comando principal
 exec "$@"

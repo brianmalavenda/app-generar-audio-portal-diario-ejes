@@ -8,7 +8,7 @@ def get_access_token_service_account():
     try:
         # Intentar cargar desde archivo (para desarrollo local)
         credentials = service_account.Credentials.from_service_account_file(
-            'rugged-feat-471218-r8-213c1ff0e10f.json',
+            '../cred/key.json',
             scopes=['https://www.googleapis.com/auth/cloud-platform']
         )
         
@@ -23,7 +23,7 @@ def get_project_id_service_account():
     """Obtiene project ID desde las credenciales de servicio"""
     try:
         # Intentar desde archivo
-        with open('rugged-feat-471218-r8-213c1ff0e10f.json', 'r') as f:
+        with open('../cred/key.json', 'r') as f:
             credentials_info = json.load(f)
             return credentials_info.get('project_id')
     
