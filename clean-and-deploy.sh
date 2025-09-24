@@ -157,8 +157,8 @@ deploy_compose() {
     print_color "=== Desplegando con Docker Compose ===" "$BLUE"
     
     print_color "Ejecutando docker-compose up..." "$YELLOW"
-    # docker-compose up -d
-    docker stack deploy -c docker-compose.yml mi-app
+    docker-compose up -d
+    # docker stack deploy -c docker-compose.yml mi-app
     
     print_color "Esperando que los servicios inicien..." "$YELLOW"
     sleep 10

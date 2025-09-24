@@ -18,7 +18,7 @@ const App: React.FC = () => {
     const formData = new FormData();
     formData.append('file', file);
 
-    try {
+    // try {
       /**
        * @type {status:{string}, palabras:{number}, caracteres:{number}, tamanio:{number}}
        */
@@ -27,23 +27,23 @@ const App: React.FC = () => {
         body: formData,
       });
 
-      console.log("Tengo el archivo listo para guardar")
+    //   console.log("Tengo el archivo listo para guardar")
 
-      if (response.ok) {
+      if (response.ok){ 
         const data: FileStats = await response.json();
         setFileStats(data) 
-
-        const message = await response.text();
-        setUploadMessage(`${message}`);
-        return true;
-      } else {
-        setUploadMessage(`${response.statusText}`);
-        return false;
       }
-    } catch (error) {
-      setUploadMessage(`Error de red: ${error}`);
-      return false;
-    }
+    //     const message = await response.text();
+    //     setUploadMessage(`${message}`);
+        return true;
+    //   } else {
+    //     setUploadMessage(`${response.statusText}`);
+    //     return false;
+    //   }
+    // } catch (error) {
+    //   setUploadMessage(`Error de red: ${error}`);
+    //   return false;
+    // }
   };
 
   const handleFileChange = async (selectedFile: File) => {
@@ -141,21 +141,30 @@ const App: React.FC = () => {
 
   const handleDownloadText = async(filename: string) => {
     // Para descargar un archivo        
-        const response = await fetch(`http://localhost:5000/api/descargar_doc_procesado?filename=${filename}`);
-        const body_response = await response.json()
+    const response = await fetch('http://localhost:5000/api/descargar_doc_procesado', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            filename: filename
+        })
+    });
+    // const response = await fetch(`http://localhost:5000/api/descargar_doc_procesado?filename=${filename}`);
+    const body_response = await response.json()
 
-        if (body_response.status) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-        } else {
-            console.error('Error al descargar el archivo');
-        }
+    if (body_response.status) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    } else {
+        console.error('Error al descargar el archivo');
+    }
   };
 
   return (
