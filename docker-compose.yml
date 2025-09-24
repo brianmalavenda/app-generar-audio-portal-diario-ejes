@@ -2,27 +2,30 @@ version: '3.8'
 
 services:
   frontend:
-    image: frontend:latest  # Cambiar build por image
+    image: frontend
+    container_name: frontend-container
     ports:
       - "3000:3000"
     networks:
       - tts-network
 
   backend:
-    image: backend:latest
+    image: backend
+    container_name: backend-container
     ports:
       - "5000:5000"
     volumes:
-      - shared-data:/app/shared-files
+      - ./shared:/app/shared-files
     networks:
       - tts-network
 
   api-proxy:
-    image: api-proxy:latest
+    image: api-proxy
+    container_name: api-proxy-container
     ports:
       - "5001:5000"
     volumes:
-      - shared-data:/app/shared-files
+      - ./shared:/app/shared-files
     networks:
       - tts-network
     secrets:

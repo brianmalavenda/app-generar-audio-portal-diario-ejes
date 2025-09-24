@@ -2,13 +2,14 @@ import os
 import json
 from google.oauth2 import service_account
 import google.auth.transport.requests
+import requests
 
 def get_access_token_service_account():
     """Obtiene token usando Service Account (mejor para Docker)"""
     try:
         # Leer credenciales desde variable de entorno
-        credentials_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
-        
+        credentials_json = os.getenv('GOOGLE_TTS_API_KEY')
+
         if credentials_json:
             # Si las credenciales están en una variable de entorno
             credentials_info = json.loads(credentials_json)
@@ -28,7 +29,7 @@ def get_access_token_service_account():
 def get_project_id_service_account():
     """Obtiene project ID desde las credenciales de servicio"""
     try:
-        credentials_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+        credentials_json = os.getenv('GOOGLE_TTS_API_KEY')
         
         if credentials_json:
             credentials_info = json.loads(credentials_json)
@@ -39,11 +40,25 @@ def get_project_id_service_account():
         return None
     
 
-def synthesize_speech(text, token, project_id):
-    url = "https://texttospeech.googleapis.com/v1/text:synthesize"
-
+def synthesize_speech(text, token, project_id, filename):
     if not token:
         return None
+
+    # Calcular tamaño del texto
+    text_size = len(text.encode('utf-8'))
+    is_long_audio = text_size > 5000
+    
+    print(f"Tamaño del texto: {text_size} bytes")
+    print(f"Es audio largo: {is_long_audio}")
+    
+    if is_long_audio:
+        url = f"https://texttospeech.googleapis.com/v1beta1/projects/{project_id}/locations/global:synthesizeLongAudio"
+        audio_encoding = "LINEAR16"  # Único soportado para audio largo
+        extension = ".wav"
+    else:
+        url = "https://texttospeech.googleapis.com/v1/text:synthesize"
+        audio_encoding = "OGG_OPUS"  # Puedes usar MP3, OGG_OPUS, etc.
+        extension = ".ogg"
 
     headers = {
         "Authorization": f"Bearer {token}",
@@ -53,17 +68,24 @@ def synthesize_speech(text, token, project_id):
     
     data = {
         "input": {
-            "ssml": text
+            # "ssml": text
+            "text": text
         },
         "voice": {
-            "languageCode": "es-US"
+            "language_code": "es-us",
+            "name": "es-US-Standard-A"
         },
-        "audioConfig": {
-            "audioEncoding": "ogg_opus",
-            "speakingRate": 1.0
+        "audio_config": {
+            "audio_encoding": audio_encoding,
+            "speaking_rate": 1.0
         }
+        # "output_gcs_uri": f"gs://audios-text-to-speech-01/{filename}.{extension}"
     }
     
+     # Configuración adicional para audio largo
+    if is_long_audio:
+        data["output_gcs_uri"] = f"gs://audios-text-to-speech-01/{filename}{extension}"
+
     try:
         # json.dumps convierte el diccionario data a una cadena JSON
         response = requests.post(url, headers=headers, data=json.dumps(data))

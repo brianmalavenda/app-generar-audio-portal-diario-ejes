@@ -7,8 +7,6 @@ from flask import Flask, request, jsonify, send_file
 import requests
 from flask_cors import CORS  # Importa la extensión CORS
 import os
-import time
-import json
 
 app = Flask(__name__)
 # Usar ruta absoluta con valor por defecto
@@ -21,6 +19,18 @@ print(f"Directorio de guardado: {SAVE_FOLDER}")
 class Heading1NotFoundException(Exception):
     """Excepción personalizada para cuando no se encuentra un Heading 1"""
     pass
+
+@app.route('/api/archivos_procesados')
+def listar_archivos_procesados():
+    import glob
+    archivos = glob.glob("/app/shared-files/diario_procesado/*.docx")
+    archivos_lista = [os.path.basename(archivo) for archivo in archivos]
+    
+    return jsonify({
+        'directorio': os.path.abspath("/app/shared-files/diario_procesado/"),
+        'archivos': archivos_lista,
+        'total': len(archivos_lista)
+    })
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
@@ -55,16 +65,54 @@ def upload_file():
     tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(xml_salida)
     print ({"status": "OK", "Cantidad de palabras en SSML:": palabras_caracteres[0], "Cantidad de caracteres en SSML": palabras_caracteres[1], "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo })
     
-    return 'Archivo guardado', 200
+    return jsonify({"palabras:": palabras_caracteres[0], "caracteres": palabras_caracteres[1], "tamanio" : tamanio_megabytes_archivo }), 200
 
-@app.route('/api/descargar_doc_procesado', methods=['GET'])
+# @app.route('/api/descargar_doc_procesado', methods=['GET'])
+# def descargar_doc_procesado():
+#     filename = request.args.get('filename')
+#     new_filename = 'procesado_'+filename
+#     file_path = os.path.join('/app/shared-files/diario_procesado', new_filename)
+#     if not os.path.isfile(file_path):
+#         return 'No existe el archivo que estas buscando', 404
+#     return send_file(file_path, as_attachment=True)
+
+@app.route('/api/descargar_doc_procesado', methods=['POST'])
 def descargar_doc_procesado():
-    filename = request.args.get('filename')
-    new_filename = 'procesado_'+filename
-    file_path = os.path.join('/app/shared-files/diario_procesado', new_filename)
-    if not os.path.isfile(file_path):
-        return 'No existe el archivo que estas buscando', 404
-    return send_file(file_path, as_attachment=True)
+    filename = request.json.get('filename')  # Ahora viene en el body
+    
+    if not filename:
+        return jsonify({'error': 'Filename parameter is required'}), 400
+    
+    # Sanitizar el filename para seguridad
+    if '..' in filename or filename.startswith('/'):
+        return jsonify({'error': 'Invalid filename'}), 400
+    
+    file_path = os.path.join("procesados/", filename)
+    
+    print(f"Buscando archivo en: {file_path}")  # Debug
+    print(f"Archivo existe: {os.path.exists(file_path)}")  # Debug
+
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+    
+    try:
+        # Verificar que es un archivo y no un directorio
+        if not os.path.isfile(file_path):
+            return jsonify({'error': 'Path is not a file'}), 400
+            
+        # Debug: información del archivo
+        file_stats = os.stat(file_path)
+        print(f"Tamaño del archivo: {file_stats.st_size} bytes")
+        
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=filename,
+            conditional=True  # Esto permite el 304 para cache, pero fuerza descarga si es necesario
+        )
+    except Exception as e:
+        print(f"Error al enviar archivo: {e}")
+        return jsonify({'error': f'Error downloading file: {str(e)}'}), 500
 
 def extraer_texto_resaltado(input_path, output_path):
     """
@@ -221,9 +269,6 @@ def convertir_a_formato_ssml(input_path,output_path):
         return [cantidad_palabras, cantidad_caracteres]
     except Exception as e:
         print(f"Error al convertir a SSML: {str(e)}")
-
-@app.route('/api/generar_audio/<filename>', methods=['POST'])
-def generar_audio(filename):
     # Obtener el nombre del archivo del cuerpo de la solicitud
     base_url = "http://localhost:5001/"
     url = base_url + filename

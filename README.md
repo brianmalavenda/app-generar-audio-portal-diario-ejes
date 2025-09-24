@@ -146,9 +146,9 @@ sudo docker build -t frontend-images .
 <!-- creamos la red bridge para comunicarse entre contenedores -->
 docker network create tts-network
 
-docker run -it -p 5000:5000 -v $(pwd)/shared-data:app/shared-files --name backend-container-api  --network tts-network backend-python-images
-
-docker run -it -p 3000:3000 --name frontend-container --network tts-network frontend-images
+docker run -it -p 5001:5001 -v $(pwd)/shared:/app/shared-files --name api-proxy-container  --network tts-network api-proxy:latest
+docker run -it -p 5000:5000 -v $(pwd)/shared:/app/shared-files --name backend-container  --network tts-network backend:latest
+docker run -it -p 3000:3000 --name frontend-container --network tts-network frontend:latest
 
 <!-- entrar dentro de mi contenedor -->
 docker exec -it backend-container-api /bin/bash
@@ -158,9 +158,7 @@ docker exec nombre_de_tu_contenedor find / -name "*.txt" 2>/dev/null
 docker volumen ls
 
 
-docker stop $(docker ps -aq) && docker rm $(docker ps -aq) && docker rmi $(docker images -q) 
-&& rmdir shared-data
-
+docker stop $(docker ps -aq) && docker rm $(docker ps -aq) && docker rmi $(docker images -q) && rmdir shared-data
 
 docker build -t frontend:latest ./frontend
 docker build -t backend:latest ./backend
