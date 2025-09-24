@@ -104,8 +104,22 @@ const App: React.FC = () => {
     alert('Función de exportar a audio - En una implementación real, esto se comunicaría con el backend Python');
   };
 
-  const handleDownloadText = () => {
-    alert('Función de descargar solo texto - En una implementación real, esto descargaría el texto extraído del documento');
+  const handleDownloadText = async(filename: string) => {
+    // Para descargar un archivo        
+        const response = await fetch(`http://localhost:5000/api/descargar_doc_procesado?filename=${filename}`);
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } else {
+            console.error('Error al descargar el archivo');
+        }
   };
 
   return (
@@ -184,7 +198,7 @@ const App: React.FC = () => {
                   Exportar a audio
                 </button>
                 <button
-                  onClick={handleDownloadText}
+                  onClick={() => handleDownloadText(file.name)}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

@@ -2,9 +2,9 @@
 import React, { useState, useCallback } from "react";
 
 interface FileStats {
-  size: string;
-  words: number;
-  characters: number;
+  palabras: number;
+  caracteres: number;
+  tamanio: string;
 }
 
 const App: React.FC = () => {
@@ -19,12 +19,20 @@ const App: React.FC = () => {
     formData.append('file', file);
 
     try {
+      /**
+       * @type {status:{string}, palabras:{number}, caracteres:{number}, tamanio:{number}}
+       */
       const response = await fetch('http://localhost:5000/api/upload', {
         method: 'POST',
         body: formData,
       });
 
+      console.log("Tengo el archivo listo para guardar")
+
       if (response.ok) {
+        const data: FileStats = await response.json();
+        setFileStats(data) 
+
         const message = await response.text();
         setUploadMessage(`${message}`);
         return true;
@@ -38,41 +46,7 @@ const App: React.FC = () => {
     }
   };
 
-  const processFileForStats = useCallback((selectedFile: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result;
-        const textContent = typeof content === 'string' ? content : '';
-        
-        const words = textContent.split(/\s+/).filter(word => word.length > 0).length;
-        const characters = textContent.length;
-        
-        setFileStats({
-          size: (selectedFile.size / (1024 * 1024)).toFixed(2),
-          words: words,
-          characters: characters,
-        });
-      } catch (error) {
-        console.error("Error procesando archivo para estadísticas:", error);
-      }
-    };
-    
-    if (selectedFile.type === 'text/plain') {
-      reader.readAsText(selectedFile);
-    } else {
-      // Simular procesamiento para archivos .docx
-      setTimeout(() => {
-        setFileStats({
-          size: (selectedFile.size / (1024 * 1024)).toFixed(2),
-          words: Math.floor(Math.random() * 1000) + 100,
-          characters: Math.floor(Math.random() * 5000) + 500,
-        });
-      }, 500);
-    }
-  }, []);
-
-  const handleFileChange = useCallback(async (selectedFile: File) => {
+  const handleFileChange = async (selectedFile: File) => {
     if (!selectedFile) return;
     
     setFile(selectedFile);
@@ -80,14 +54,11 @@ const App: React.FC = () => {
     setUploadMessage("");
     setIsUploading(true);
 
-    // Procesar estadísticas en paralelo
-    processFileForStats(selectedFile);
-
     // Subir el archivo inmediatamente al backend
     await uploadFileToBackend(selectedFile);
     
     setIsUploading(false);
-  }, [processFileForStats]);
+  };
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -146,18 +117,34 @@ const App: React.FC = () => {
     console.error('Error:', error);
     throw error;
   }
-};
+  };
 
-  const handleExportToAudio = async () => {
-    alert('Función de exportar a audio - En una implementación real, esto se comunicaría con el backend Python'); 
+  const handleExportToAudio = async(filename: string) => {
+        // Para descargar un archivo        
+        const response = await fetch(`http://localhost:5001/api/generar_audio?filename=${filename}`);
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } else {
+            console.error('Error al descargar el archivo');
+        }
+
     await generateAudio(file.name)
   };
 
   const handleDownloadText = async(filename: string) => {
     // Para descargar un archivo        
         const response = await fetch(`http://localhost:5000/api/descargar_doc_procesado?filename=${filename}`);
-        
-        if (response.ok) {
+        const body_response = await response.json()
+
+        if (body_response.status) {
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -238,15 +225,15 @@ const App: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 w-full max-w-md">
                     <div className="bg-white rounded-lg p-4 shadow-sm border">
                       <p className="text-sm text-gray-500">Tamaño</p>
-                      <p className="text-lg font-semibold text-gray-800">{fileStats.size} MB</p>
+                      <p className="text-lg font-semibold text-gray-800">{fileStats.tamanio} MB</p>
                     </div>
                     <div className="bg-white rounded-lg p-4 shadow-sm border">
                       <p className="text-sm text-gray-500">Palabras</p>
-                      <p className="text-lg font-semibold text-gray-800">{fileStats.words}</p>
+                      <p className="text-lg font-semibold text-gray-800">{fileStats.palabras}</p>
                     </div>
                     <div className="bg-white rounded-lg p-4 shadow-sm border">
                       <p className="text-sm text-gray-500">Caracteres</p>
-                      <p className="text-lg font-semibold text-gray-800">{fileStats.characters}</p>
+                      <p className="text-lg font-semibold text-gray-800">{fileStats.caracteres}</p>
                     </div>
                   </div>
                 )}
@@ -254,8 +241,7 @@ const App: React.FC = () => {
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
                 <button
-                  // onClick={handleExportToAudio}
-                  onClick={() => generateAudio(file.name)}
+                  onClick={() => handleExportToAudio(file.name)}
                   disabled={isUploading}
                   className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center"
                 >
