@@ -146,7 +146,7 @@ sudo docker build -t frontend-images .
 <!-- creamos la red bridge para comunicarse entre contenedores -->
 docker network create tts-network
 
-docker run -it -p 5001:5001 -v $(pwd)/shared:/app/shared-files --name api-proxy-container  --network tts-network api-proxy:latest
+docker run -it -p 5001:5000 -v $(pwd)/shared:/app/shared-files --name api-proxy-container  --network tts-network api-proxy:latest
 docker run -it -p 5000:5000 -v $(pwd)/shared:/app/shared-files --name backend-container  --network tts-network backend:latest
 docker run -it -p 3000:3000 --name frontend-container --network tts-network frontend:latest
 
@@ -176,3 +176,14 @@ cd ~/Repositorio/app-generar-audio-portal-diario-ejes
 docker swarm init
 docker secret create google_credentials api/cred/google-credentials.json
 docker stack deploy -c docker-compose.yml audio-app
+
+
+# Generar audio largo
+
+curl -X POST -F "file=@procesado_test_03_corto.docx" http://127.0.0.1:5001/api_proxy/sintetizar_audio --output prueba_01_corto.ogg
+
+# Generar audio corto
+
+curl -X POST -F "file=@procesado_test_03_largo.docx" http://127.0.0.1:5001/api_proxy/sintetizar_audio --output prueba_01_largo.ogg
+
+https://console.cloud.google.com/storage/browser/audios-text-to-speech-01;tab=objects?project=rugged-feat-471218-r8&prefix=&forceOnObjectsSortingFiltering=false
