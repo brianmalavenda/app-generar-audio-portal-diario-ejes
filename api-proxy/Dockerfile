@@ -34,5 +34,5 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Exponer puerto
 EXPOSE 5000
 
-# ENTRYPOINT [ "docker-entrypoint.sh" ]
+ENTRYPOINT [ "docker-entrypoint.sh" ]
 CMD ["python", "main.py"]

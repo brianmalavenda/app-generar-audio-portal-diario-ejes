@@ -14,20 +14,24 @@ const App: React.FC = () => {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadMessage, setUploadMessage] = useState<string>("");
 
+  /**
+   * 
+   * @param file 
+   * @description Subir el archivo al backend
+   * @returns 
+   */
   const uploadFileToBackend = async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
 
     // try {
       /**
-       * @type {status:{string}, palabras:{number}, caracteres:{number}, tamanio:{number}}
+       * @type {palabras:{number}, caracteres:{number}, tamanio:{number}}
        */
       const response = await fetch('http://localhost:5000/api/upload', {
         method: 'POST',
         body: formData,
       });
-
-    //   console.log("Tengo el archivo listo para guardar")
 
       if (response.ok){ 
         const data: FileStats = await response.json();
@@ -70,12 +74,17 @@ const App: React.FC = () => {
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
+  /**
+   * @param dropFile
+   * @description Cargar archivo desde area de drop input
+   * @returns
+   */
+  const handleDrop = useCallback((dropFile: React.DragEvent<HTMLDivElement>) => {
+    dropFile.preventDefault();
     setIsDragging(false);
     
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const selectedFile = e.dataTransfer.files[0];
+    if (dropFile.dataTransfer.files && dropFile.dataTransfer.files[0]) {
+      const selectedFile = dropFile.dataTransfer.files[0];
       if (selectedFile.name.endsWith('.docx') || selectedFile.name.endsWith('.doc') || selectedFile.type === 'text/plain') {
         handleFileChange(selectedFile);
       } else {
@@ -84,9 +93,13 @@ const App: React.FC = () => {
     }
   }, [handleFileChange]);
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
+  /**
+   * @param inputFile
+   * @description Cargar archivo desde input
+   */
+  const handleFileInput = useCallback((inputFile: React.ChangeEvent<HTMLInputElement>) => {
+    if (inputFile.target.files && inputFile.target.files[0]) {
+      const selectedFile = inputFile.target.files[0];
       if (selectedFile.name.endsWith('.docx') || selectedFile.name.endsWith('.doc') || selectedFile.type === 'text/plain') {
         handleFileChange(selectedFile);
       } else {
@@ -120,23 +133,24 @@ const App: React.FC = () => {
   };
 
   const handleExportToAudio = async(filename: string) => {
-        // Para descargar un archivo        
-        const response = await fetch(`http://localhost:5001/api/generar_audio?filename=${filename}`);
-        
-        if (response.ok) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-        } else {
-            console.error('Error al descargar el archivo');
-        }
+    // Para descargar un archivo        
+    const response = await fetch(`http://localhost:5001/api_proxy/generar_audio?filename=procesado_${filename}`);
+    console.log("Respuesta capturada por el frontend = ", response.json() )
 
-    await generateAudio(file.name)
+    if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    } else {
+        console.error('Error al descargar el archivo');
+    }
+
+    // await generateAudio(file.name)
   };
 
   const handleDownloadText = async(filename: string) => {

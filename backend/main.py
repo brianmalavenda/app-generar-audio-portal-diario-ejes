@@ -61,6 +61,7 @@ def upload_file():
     
     extraer_texto_resaltado(file_path, documento_salida)
     print("Procese el documento y extraje lo resaltado, vamos bien")
+    
     palabras_caracteres = convertir_a_formato_ssml(documento_salida, xml_salida)
     tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(xml_salida)
     print ({"status": "OK", "Cantidad de palabras en SSML:": palabras_caracteres[0], "Cantidad de caracteres en SSML": palabras_caracteres[1], "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo })
