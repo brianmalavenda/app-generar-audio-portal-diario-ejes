@@ -146,7 +146,10 @@ sudo docker build -t frontend-images .
 <!-- creamos la red bridge para comunicarse entre contenedores -->
 docker network create tts-network
 
-docker run -it -p 5001:5000 -v $(pwd)/shared:/app/shared-files --name api-proxy-container  --network tts-network api-proxy:latest
+docker run -it -p 5001:5000 -v $(pwd)/shared:/app/shared-files --name api-proxy-container api-proxy:latest
+
+docker run -it -p 5001:5000 --name api-proxy-container api-proxy:latest
+
 docker run -it -p 5000:5000 -v $(pwd)/shared:/app/shared-files --name backend-container  --network tts-network backend:latest
 docker run -it -p 3000:3000 --name frontend-container --network tts-network frontend:latest
 

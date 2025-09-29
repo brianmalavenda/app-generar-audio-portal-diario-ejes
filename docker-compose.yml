@@ -28,21 +28,17 @@ services:
       - ./shared:/app/shared-files
     networks:
       - tts-network
-    secrets:
-      - google_credentials
-    environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google_credentials
+    # secrets:
+    #   - google_credentials
+    # environment:
+    #   - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google_credentials
     depends_on:
       - backend
 
-volumes:
-  shared-data:
-    driver: local
-
 networks:
   tts-network:
-    driver: overlay  # Cambiar a overlay para Swarm
+    driver: bridge  # Cambiar a overlay para Swarm
 
-secrets:
-  google_credentials:
-    external: true
+# secrets:
+#   google_credentials:
+#     external: true

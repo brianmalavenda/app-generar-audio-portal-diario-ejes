@@ -178,7 +178,7 @@ test_services() {
     curl -f http://127.0.0.1:5001/api-proxy/health || print_color "API Proxy no responde" "$RED"
     
     print_color "Probando frontend (puerto 3000)..." "$YELLOW"
-    curl -f http://127.0.0.1:3000/pages || print_color "Frontend no responde" "$RED"
+    curl -f http://127.0.0.1:3000 || print_color "Frontend no responde" "$RED"
 }
 
 # Menú principal
