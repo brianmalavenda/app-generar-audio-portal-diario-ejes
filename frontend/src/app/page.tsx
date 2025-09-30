@@ -7,12 +7,30 @@ interface FileStats {
   tamanio: string;
 }
 
+interface AudioState {
+  isGenerating: boolean;
+  audioUrl: string | null;
+  audioName: string | null;
+  error: string | null;
+}
+
 const App: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [fileStats, setFileStats] = useState<FileStats | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadMessage, setUploadMessage] = useState<string>("");
+  const [audioState, setAudioState] = useState<AudioState>({
+    isGenerating: false,
+    audioUrl: null,
+    audioName: null,
+    error: null
+  });
+
+  // Función para formatear el tamaño del archivo a 2 decimales
+  const formatFileSize = (sizeInMB: string) => {
+    return parseFloat(sizeInMB).toFixed(2);
+  };
 
   /**
    * 
@@ -24,30 +42,32 @@ const App: React.FC = () => {
     const formData = new FormData();
     formData.append('file', file);
 
-    // try {
-      /**
-       * @type {palabras:{number}, caracteres:{number}, tamanio:{number}}
-       */
+    try {
       const response = await fetch('http://localhost:5000/api/upload', {
         method: 'POST',
         body: formData,
       });
 
-      if (response.ok){ 
+      if (response.ok) { 
         const data: FileStats = await response.json();
-        setFileStats(data) 
-      }
-    //     const message = await response.text();
-    //     setUploadMessage(`${message}`);
+        setFileStats(data);
+        // Resetear estado de audio cuando se sube nuevo archivo
+        setAudioState({
+          isGenerating: false,
+          audioUrl: null,
+          audioName: null,
+          error: null
+        });
         return true;
-    //   } else {
-    //     setUploadMessage(`${response.statusText}`);
-    //     return false;
-    //   }
-    // } catch (error) {
-    //   setUploadMessage(`Error de red: ${error}`);
-    //   return false;
-    // }
+      } else {
+        const errorText = await response.text();
+        setUploadMessage(`Error: ${errorText}`);
+        return false;
+      }
+    } catch (error) {
+      setUploadMessage(`Error de red: ${error}`);
+      return false;
+    }
   };
 
   const handleFileChange = async (selectedFile: File) => {
@@ -108,66 +128,84 @@ const App: React.FC = () => {
     }
   }, [handleFileChange]);
 
-  const generateAudio = async (filename: string) => {
-  try {
-    const response = await fetch('http://localhost:5000/api/generateaudio', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ filename }),
-    });
+  const handleExportToAudio = useCallback(async (filename: string) => {
+    try {
+      setAudioState({
+        isGenerating: true,
+        audioUrl: null,
+        audioName: null,
+        error: null
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      console.log('Audio generado:', data);
-      return data;
-    } else {
-      console.error('Error generando audio:', response.statusText);
-      throw new Error('Error generando audio');
+      const response = await fetch(
+        `http://localhost:5000/api/generar_audio?filename=procesado_${filename}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          mode: 'cors'
+        }
+      );
+
+      if (response.ok) {            
+        const data = await response.json();
+        
+        if (data.status === "OK") {
+          // Construir la URL del audio
+          const audioName = `procesado_${filename.split('.').slice(0, -1).join('.')}`;
+          const audioUrl = `http://localhost:5000/audio/${data.audio_file}`;
+          
+          setAudioState({
+            isGenerating: false,
+            audioUrl: audioUrl,
+            audioName: audioName,
+            error: null
+          });
+        } else {
+          throw new Error(data.message || 'Error generando audio');
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Error ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error en la solicitud:', error);
+      setAudioState({
+        isGenerating: false,
+        audioUrl: null,
+        audioName: null,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      });
     }
-  } catch (error) {
-    console.error('Error:', error);
-    throw error;
-  }
-  };
+  }, []);
 
-  const handleExportToAudio = async(filename: string) => {
-    // Para descargar un archivo        
-    const response = await fetch(`http://localhost:5001/api_proxy/generar_audio?filename=procesado_${filename}`);
-    console.log("Respuesta capturada por el frontend = ", response.json() )
-
-    if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-    } else {
-        console.error('Error al descargar el archivo');
+  const handleDownloadAudio = useCallback(() => {
+    if (audioState.audioUrl && audioState.audioName) {
+      const a = document.createElement('a');
+      a.href = audioState.audioUrl;
+      a.download = `${audioState.audioName}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
+  }, [audioState.audioUrl, audioState.audioName]);
 
-    // await generateAudio(file.name)
-  };
-
-  const handleDownloadText = async(filename: string) => {
-    // Para descargar un archivo        
-    const response = await fetch('http://localhost:5000/api/descargar_doc_procesado', {
+  const handleDownloadText = async (filename: string) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/descargar_doc_procesado', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            filename: filename
+          filename: filename
         })
-    });
-    // const response = await fetch(`http://localhost:5000/api/descargar_doc_procesado?filename=${filename}`);
-    const body_response = await response.json()
+      });
+      
+      const body_response = await response.json();
 
-    if (body_response.status) {
+      if (body_response.status) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -176,9 +214,40 @@ const App: React.FC = () => {
         document.body.appendChild(a);
         a.click();
         a.remove();
-    } else {
+        window.URL.revokeObjectURL(url);
+      } else {
         console.error('Error al descargar el archivo');
+        alert('Error al descargar el archivo');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al descargar el archivo');
     }
+  };
+
+  const AudioPlayer = () => {
+    if (!audioState.audioUrl) return null;
+
+    return (
+      <div className="mt-6 p-4 bg-white rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">Audio Generado</h3>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <audio controls className="flex-1">
+            <source src={audioState.audioUrl} type="audio/wav" />
+            Tu navegador no soporta el elemento de audio.
+          </audio>
+          <button
+            onClick={handleDownloadAudio}
+            className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300 flex items-center justify-center whitespace-nowrap"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Descargar audio
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -207,7 +276,6 @@ const App: React.FC = () => {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-gray-700 mb-2">Arrastra tu archivo Word aquí</h3>
-              <p className="text-gray-500 mb-6">o</p>
               <label className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg cursor-pointer transition duration-300 inline-block">
                 Seleccionar archivo
                 <input 
@@ -246,33 +314,56 @@ const App: React.FC = () => {
                 
                 {fileStats && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 w-full max-w-md">
-                    <div className="bg-white rounded-lg p-4 shadow-sm border">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border flex flex-col items-center justify-center">
                       <p className="text-sm text-gray-500">Tamaño</p>
-                      <p className="text-lg font-semibold text-gray-800">{fileStats.tamanio} MB</p>
+                      <p className="text-lg font-semibold text-gray-800">{formatFileSize(fileStats.tamanio)} MB</p>
                     </div>
-                    <div className="bg-white rounded-lg p-4 shadow-sm border">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border flex flex-col items-center justify-center">
                       <p className="text-sm text-gray-500">Palabras</p>
                       <p className="text-lg font-semibold text-gray-800">{fileStats.palabras}</p>
                     </div>
-                    <div className="bg-white rounded-lg p-4 shadow-sm border">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border flex flex-col items-center justify-center">
                       <p className="text-sm text-gray-500">Caracteres</p>
                       <p className="text-lg font-semibold text-gray-800">{fileStats.caracteres}</p>
                     </div>
                   </div>
                 )}
               </div>
-              
+
+              {/* Reproductor de Audio */}
+              <AudioPlayer />
+
+              {/* Mensaje de error */}
+              {audioState.error && (
+                <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">
+                  Error: {audioState.error}
+                </div>
+              )}
+
+              {/* Botones de acción */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-                <button
-                  onClick={() => handleExportToAudio(file.name)}
-                  disabled={isUploading}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m0-9.9a5 5 0 011.414-1.414M9 17.072a7 7 0 002.828-2.828M9 17.072V19a2 2 0 002 2h2a2 2 0 002-2v-1.928" />
-                  </svg>
-                  Exportar a audio
-                </button>
+                {!audioState.audioUrl ? (
+                  <button
+                    onClick={() => handleExportToAudio(file.name)}
+                    disabled={isUploading || audioState.isGenerating}
+                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center"
+                  >
+                    {audioState.isGenerating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        Generando audio...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m0-9.9a5 5 0 011.414-1.414M9 17.072a7 7 0 002.828-2.828M9 17.072V19a2 2 0 002 2h2a2 2 0 002-2v-1.928" />
+                        </svg>
+                        Exportar a audio
+                      </>
+                    )}
+                  </button>
+                ) : null}
+                
                 <button
                   onClick={() => handleDownloadText(file.name)}
                   disabled={isUploading}
@@ -290,6 +381,12 @@ const App: React.FC = () => {
                   setFile(null);
                   setFileStats(null);
                   setUploadMessage("");
+                  setAudioState({
+                    isGenerating: false,
+                    audioUrl: null,
+                    audioName: null,
+                    error: null
+                  });
                 }}
                 disabled={isUploading}
                 className="mt-4 text-blue-600 hover:text-blue-800 disabled:text-gray-500 font-medium transition duration-300"

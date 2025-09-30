@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 import os
-from flask import Flask, request, send_file # jsonify
+from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS  
 from gcloud_SA_access import get_access_token_service_account, get_project_id_service_account, synthesize_speech
 from utils import leer_docx_completo, procesar_archivo 
@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import json
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:3000", "http://localhost"])
+CORS(app, origins=["http://localhost:3000","http://localhost"])
 
 @dataclass
 class FileInfo:
@@ -151,49 +151,20 @@ def generar_audio():
     if not gcloud_session.token or not gcloud_session.project_id:
         return "Error de autenticación con Google Cloud", 500
 
-    result = synthesize_speech(gcloud_session, file_syntetized)   
-     
-    print(f"###### Resultado de la sintetización del audio: {result}")
-    # print(f"###### {result.json()}")
-    # print(f"###### {result["estado"]}")
-    # print(f"###### {result.estado}")
-    print(f"###### {result['estado']}")
-    
-    # return send_file(audio_path, as_attachment=True, download_name=audio_filename, mimetype=f"audio/")#{extension}")
+    try:
+        result = synthesize_speech(gcloud_session, file_syntetized)   
+        
+        print(f"Resultado de la síntesis: {json.dumps(result)[:100]}...")  # Imprime solo los primeros 100 caracteres del resultado
 
-    # if result and 'audioContent' in result:
-    #     try:
-    #         import base64
-    #         audio_data = base64.b64decode(result['audioContent'])
-            
-    #         # Crear directorio si no existe
-    #         # audio_dir = "test/audios/"
-    #         audio_dir = "/app/shared-files/audio/"
-    #         os.makedirs(audio_dir, exist_ok=True)
-            
-    #         # Crear nombre de archivo para el audio
-    #         audio_filename = f"{os.path.splitext(filename)[0]}"#{extension}"
-    #         print(f"Este es el archivo de audio {audio_filename}")
-    #         # audio_path = os.path.join("/app/shared-files/audios/", audio_filename)
-    #         audio_path = os.path.join(audio_dir, audio_filename)
-
-    #         # Guardar archivo de audio
-    #         with open(audio_path, "wb") as audio_file:
-    #             audio_file.write(audio_data)
-            
-    #         print(f"Audio guardado en: {audio_path}")
-            
-    #         # Devolver el archivo de audio para descargar
-    #         return send_file(audio_path, as_attachment=True, download_name=audio_filename, mimetype=f"audio/")#{extension}")
-            
-    #     except Exception as e:
-    #         print(f"Error procesando audio: {e}")
-    #         return f"Error procesando audio: {e}", 500
-    # else:
-    #     print("Error en la síntesis de voz")
-    #     return "Error en la síntesis de voz", 500
+        if result and result.get('estado') == 'exito':
+            return jsonify({'status': 'success', 'message': 'Audio generated successfully'},200)
+        else:
+            return jsonify({'status': 'error', 'message': 'Audio synthesis failed'}, 500)    
+    except Exception as e:
+        print(f"Error en generar_audio: {str(e)}")
+        return jsonify({'error': 'Internal server error'}, 500)
     
-@app.get("/api-proxy/health")
+@app.get("/api_proxy/health")
 def health():
     return {"message": "Mandame un audio que te lo traduzco al toque"}
 
