@@ -161,7 +161,8 @@ docker exec nombre_de_tu_contenedor find / -name "*.txt" 2>/dev/null
 docker volumen ls
 
 
-docker stop $(docker ps -aq) && docker rm $(docker ps -aq) && docker rmi $(docker images -q) && rmdir shared-data
+docker stop $(docker ps -aq) && docker rm $(docker ps -aq) && docker rmi $(docker images -q) 
+&& rmdir shared
 
 docker build -t frontend:latest ./frontend
 docker build -t backend:latest ./backend
@@ -190,3 +191,6 @@ curl -X POST -F "file=@procesado_test_03_corto.docx" http://127.0.0.1:5001/api_p
 curl -X POST -F "file=@procesado_test_03_largo.docx" http://127.0.0.1:5001/api_proxy/sintetizar_audio --output prueba_01_largo.ogg
 
 https://console.cloud.google.com/storage/browser/audios-text-to-speech-01;tab=objects?project=rugged-feat-471218-r8&prefix=&forceOnObjectsSortingFiltering=false
+
+# LOGS de los contenedores activos
+docker-compose logs -f

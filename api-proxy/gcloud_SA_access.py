@@ -99,7 +99,7 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
     print(f"Respuesta de la api de grabacion de audio {response.json()}")
 
     # Crear nombre de archivo para el audio
-    audio_filename = f"{file.name}.{extension}"
+    audio_filename = f"{file.name}{extension}"
     print(f"Este es el archivo de audio {audio_filename}")
     audio_path = os.path.join(destino_local, audio_filename)
     
@@ -181,6 +181,7 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
                 }
         else:
             # en audio_path mando toda la ruta incluido el nombre del archivo
+            time.sleep(5)
             descargar_audio_gs(gcloud, bucket_name, f"{file.name}{extension}", audio_path)
             print(f"------------descargamos audio largo-----------")
             return {

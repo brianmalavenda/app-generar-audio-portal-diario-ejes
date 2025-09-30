@@ -5,20 +5,99 @@ import os
 import xml.dom.minidom
 from flask import Flask, request, jsonify, send_file
 import requests
-from flask_cors import CORS  # Importa la extensión CORS
+from flask_cors import CORS, cross_origin  # Importa la extensión CORS
 import os
+from functools import wraps
+from dotenv import load_dotenv
+import datetime
+
+# load_dotenv()
+# ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
 
 app = Flask(__name__)
 # Usar ruta absoluta con valor por defecto
+AUDIO_FOLDER = os.getenv('AUDIO_FOLDER', '/app/shared-files/audio/')
+# os.path.join(os.getcwd(), "/app/shared-files", "audio")
 SAVE_FOLDER = os.getenv('SAVE_FOLDER', '/app/shared-files/diario_pintado/')
 # Configura CORS para permitir solicitudes desde localhost:3000
-CORS(app, origins=["http://localhost:3000"])
-os.makedirs(SAVE_FOLDER, exist_ok=True)
-print(f"Directorio de guardado: {SAVE_FOLDER}")
+
+ALLOWED_ORIGINS = ['http://localhost:3000']  # Agrega tu dominio de producción
+CORS(app, origins=ALLOWED_ORIGINS)
+# CORS(app, resources={
+#     r"/api/*": {
+#         "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
+#         "methods": ["GET", "POST"],
+#         "allow_headers": ["Content-Type"]
+#     }
+# })
 
 class Heading1NotFoundException(Exception):
     """Excepción personalizada para cuando no se encuentra un Heading 1"""
     pass
+
+@app.route('/api/healthcheck', methods=['GET'])
+@cross_origin(origins=['http://localhost:3000', 'http://127.0.0.1:3000'])
+def healthcheck():
+    """Endpoint para verificar el estado de los servicios"""
+    status = {
+        "backend": "running",
+        "cors": "enabled",
+        "environment": "docker_compose"
+    }
+    
+    # En Docker Compose, usar el nombre del servicio y puerto INTERNO
+    possible_urls = [
+        "http://api-proxy:5000/api_proxy/health",  # ✅ CORRECTO - nombre servicio + puerto interno
+        "http://api-proxy-container:5000/api_proxy/health",  # ✅ nombre contenedor
+    ]
+    
+    status["connection_attempts"] = {}
+    
+    for url in possible_urls:
+        try:
+            response = requests.get(url, timeout=5)
+            status["api_proxy"] = "connected"
+            status["api_proxy_url"] = url
+            status["api_proxy_status"] = response.status_code
+            status["api_proxy_response"] = response.json()
+            status["connection_attempts"][url] = "success"
+            break
+        except Exception as e:
+            status["connection_attempts"][url] = f"failed: {str(e)}"
+    else:
+        status["api_proxy"] = "disconnected"
+    
+    return jsonify(status), 200
+
+# Middleware de seguridad combinado
+def secure_endpoint(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Verificar Origin
+        origin = request.headers.get('Origin')
+        if origin and origin not in ALLOWED_ORIGINS:
+            return jsonify({'error': 'Cross-origin request not allowed'}), 403
+        
+        # Verificar Referer (backup)
+        referer = request.headers.get('Referer')
+        if referer and not any(allowed in referer for allowed in ALLOWED_ORIGINS):
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Verificar que no sea acceso directo (opcional)
+        user_agent = request.headers.get('User-Agent', '')
+        if 'Mozilla' not in user_agent:  # No es un navegador
+            return jsonify({'error': 'Browser access required'}), 403
+        elif 'Brave' not in user_agent:  
+            return jsonify({'error': 'Browser access required'}), 403
+        elif 'Chrome' not in user_agent:  
+            return jsonify({'error': 'Browser access required'}), 403
+        elif 'Firefox' not in user_agent:  
+            return jsonify({'error': 'Browser access required'}), 403
+        elif 'Safari' not in user_agent:  
+            return jsonify({'error': 'Browser access required'}), 403
+
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/api/archivos_procesados')
 def listar_archivos_procesados():
@@ -41,6 +120,9 @@ def upload_file():
     if file.filename == '':
         return 'No file selected', 400
     
+    
+    FILENAME = file.filename
+    print(f"Nombre del archivo subido: {FILENAME}")
     # Asegurarse de que el directorio existe (por si acaso)
     os.makedirs(SAVE_FOLDER, exist_ok=True)
 
@@ -67,15 +149,6 @@ def upload_file():
     print ({"status": "OK", "Cantidad de palabras en SSML:": palabras_caracteres[0], "Cantidad de caracteres en SSML": palabras_caracteres[1], "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo })
     
     return jsonify({"palabras:": palabras_caracteres[0], "caracteres": palabras_caracteres[1], "tamanio" : tamanio_megabytes_archivo }), 200
-
-# @app.route('/api/descargar_doc_procesado', methods=['GET'])
-# def descargar_doc_procesado():
-#     filename = request.args.get('filename')
-#     new_filename = 'procesado_'+filename
-#     file_path = os.path.join('/app/shared-files/diario_procesado', new_filename)
-#     if not os.path.isfile(file_path):
-#         return 'No existe el archivo que estas buscando', 404
-#     return send_file(file_path, as_attachment=True)
 
 @app.route('/api/descargar_doc_procesado', methods=['POST'])
 def descargar_doc_procesado():
@@ -284,6 +357,44 @@ def convertir_a_formato_ssml(input_path,output_path):
 
     # return jsonify({'message': 'Audio generated successfully', 'filename': filename}), 200
     return send_file(file_path, as_attachment=True)
+
+@app.route('/api/generar_audio', methods=['GET'])
+# @secure_endpoint # Este endpoint solo puede ser llamado desde el frontend
+@cross_origin(origins=['http://localhost:3000', 'http://127.0.0.1:3000'])
+def generar_audio():
+    filename = request.args.get('filename')
+    if not filename:
+        return "Filename es requerido", 400
+    
+    url = f"http://api-proxy:5000/api_proxy/generar_audio?filename={filename}"
+    response = requests.get(url)
+
+    print(f"Generando audio para el archivo: {response}")
+
+    if response.status_code == 200:
+        try:
+            result = response.json()            
+            # Crear nombre de archivo para el audio
+            filename_sin_extension = filename.split('.')
+            audio_filename = f"procesado_{filename_sin_extension[0]}.wav"
+            extension = "wav"
+            destino_local = AUDIO_FOLDER
+            os.makedirs(destino_local, exist_ok=True)
+            audio_path = os.path.join(destino_local, audio_filename)
+
+            print(f"Path del audio: {audio_path}")
+
+            # if os.path.exists(audio_path):
+            return jsonify({"status": "OK", "message": "Archivo de audio generado", "audio_file": audio_filename}), 200
+            # else:
+            #     print("El archivo de audio no fue encontrado después de la generación.")
+            #     return jsonify({"status": "ERROR", "message": "Archivo de audio no se guardo"}), 500
+        except Exception as e:
+            print(f"Error procesando audio: {e}")
+            return jsonify({"status": "ERROR", "message": f"Error procesando audio: {e}"}), 500
+    else:
+        print(f"Error llamando a api-proxy: {response.status_code}")
+        return jsonify({"status": "ERROR", "message": "Error llamando a api-proxy"}), 500
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
