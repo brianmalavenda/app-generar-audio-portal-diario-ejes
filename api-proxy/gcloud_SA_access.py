@@ -6,6 +6,18 @@ from google.cloud import texttospeech
 import requests
 from dataclasses import dataclass
 import time
+import logging
+import sys
+
+# Configurar logging para que vaya a stdout (se captura con docker logs)
+logging.basicConfig(
+    level=logging.DEBUG,  # Nivel de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+
+logger = logging.getLogger(__name__)
+
 @dataclass
 class FileInfo:
     name: str = "test"
@@ -37,7 +49,7 @@ def get_access_token_service_account():
         return credentials.token
     
     except Exception as e:
-        print(f"Error obteniendo token de servicio: {e}")
+        logger.info(f"api-proxy - gcloud_SA_access.py - get_access_token_service_account - 01 - Error obteniendo token de servicio: {e}")
         return None
 
 def get_project_id_service_account():
@@ -50,9 +62,23 @@ def get_project_id_service_account():
             return credentials_info.get('project_id')
     
     except Exception as e:
-        print(f"Error obteniendo project ID: {e}")
+        logger.info(f"api-proxy - gcloud_SA_access.py - get_project_id_service_account - 01 - Error obteniendo project ID: {e}")
         return None
+
+def make_audio_public(bucket_name, audio_filename):
+    """Hace público un archivo de audio ya existente en el bucket"""
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(audio_filename)
     
+    # Hacer el archivo público
+    blob.make_public()
+    
+    # Obtener URL pública
+    public_url = blob.public_url
+    
+    logger.info(f"✅ Audio hecho público: {public_url}")
+    return public_url
 
 def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
     bucket_name = "audios-text-to-speech-01"
@@ -64,7 +90,7 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
     if file.is_long:
         url = f"https://texttospeech.googleapis.com/v1beta1/projects/{gcloud.project_id}/locations/global:synthesizeLongAudio"
         audio_encoding = "LINEAR16"  # Único soportado para audio largo
-        extension = ".wav"
+        extension = ".ogg"
     else:
         url = "https://texttospeech.googleapis.com/v1/text:synthesize"
         audio_encoding = "OGG_OPUS"  # Puedes usar MP3, OGG_OPUS, etc.
@@ -96,7 +122,7 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
         data["output_gcs_uri"] = f"gs://audios-text-to-speech-01/{file.name}{extension}"
 
     response = requests.post(url, headers=headers, data=json.dumps(data))
-    print(f"Respuesta de la api de grabacion de audio {response.json()}")
+    logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 01 - Respuesta de la api de grabacion de audio {response.json()}")
 
     # Crear nombre de archivo para el audio
     audio_filename = f"{file.name}{extension}"
@@ -116,16 +142,18 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
                     with open(audio_path, "wb") as audio_file:
                         audio_file.write(audio_data)
                     
-                    print(f"Audio guardado en: {audio_path}")
+                    public_url = make_audio_public(bucket_name, f"audios/{audio_filename}")
+                    logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 02 - Audio guardado en: {public_url}")
                     
                     return {
                         "estado": "success",
                         "audio_tipo":"short",
                         "codigo":"001",
                         "respuesta": response.json()
+                        "public_url": public_url
                     }
                 except Exception as e:
-                    print(f"Error guardando audio corto: {e}")
+                    logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 03 - Error guardando audio corto: {e}")
                     return f"Error guardando audio corto: {e}", 500
         else:
             return {
@@ -168,7 +196,7 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
             }
         
         operation_data = op_response.json()
-        print(f"Estado de operación: {operation_data}")
+        logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 04 - Estado de operación: {operation_data}")
         
         # Verificar si terminó
         if operation_data.get("done", False):
@@ -183,7 +211,7 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
             # en audio_path mando toda la ruta incluido el nombre del archivo
             time.sleep(5)
             descargar_audio_gs(gcloud, bucket_name, f"{file.name}{extension}", audio_path)
-            print(f"------------descargamos audio largo-----------")
+            logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 05 - Descargamos audio largo-----------")
             return {
                 "estado": "success",
                 "audio_tipo":"large",
@@ -194,7 +222,7 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
         # Mostrar progreso
         metadata = operation_data.get("metadata", {})
         progress = metadata.get("progressPercentage", 0)
-        print(f"📊 Progreso: {progress}%")
+        logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 06 - 📊 Progreso: {progress}%")
 
 def descargar_audio_gs(gcloud, bucket_name, audio_name, destino_local):
     """
@@ -227,12 +255,12 @@ def descargar_audio_gs(gcloud, bucket_name, audio_name, destino_local):
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
             
-            print(f"✅ Audio descargado exitosamente: {destino_local}")
+            logger.info(f"api-proxy - gcloud_SA_access.py - descargar_audio_gs - 01 - ✅ Audio descargado exitosamente: {destino_local}")
             return True
         else:
-            print(f"❌ Error descargando audio: {response.status_code} - {response.text}")
+            logger.info(f"api-proxy - gcloud_SA_access.py - descargar_audio_gs - 02 - ❌ Error descargando audio: {response.status_code} - {response.text}")
             return False
             
     except Exception as e:
-        print(f"❌ Error en descarga: {e}")
+        logger.info(f"api-proxy - gcloud_SA_access.py - descargar_audio_gs - 03 - ❌ Error en descarga: {e}")
         return False

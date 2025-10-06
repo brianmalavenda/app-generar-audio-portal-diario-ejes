@@ -154,8 +154,12 @@ const App: React.FC = () => {
         if (data.status === "OK") {
           // Construir la URL del audio
           const audioName = `procesado_${filename.split('.').slice(0, -1).join('.')}`;
-          const audioUrl = `http://localhost:5000/audio/${data.audio_file}`;
-          
+          // generar un enlace al recurso que se encuentra en el backend en la carpeta app/shared-files/audio
+          // const audioUrl = `http://localhost:5000/shared-files/audio/${audioName}.wav`;
+          const audioUrl = data.public_audio_url;
+          // const audioUrl = `http://localhost:5000/audio/${data.audio_file}`;
+          console.log(audioUrl)
+
           setAudioState({
             isGenerating: false,
             audioUrl: audioUrl,
@@ -184,7 +188,7 @@ const App: React.FC = () => {
     if (audioState.audioUrl && audioState.audioName) {
       const a = document.createElement('a');
       a.href = audioState.audioUrl;
-      a.download = `${audioState.audioName}.wav`;
+      a.download = audioState.audioUrl; //`${audioState.audioName}.wav`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
