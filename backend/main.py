@@ -10,6 +10,17 @@ import os
 from functools import wraps
 from dotenv import load_dotenv
 import datetime
+import logging
+import sys
+
+# Configurar logging para que vaya a stdout (se captura con docker logs)
+logging.basicConfig(
+    level=logging.DEBUG,  # Nivel de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+
+logger = logging.getLogger(__name__)
 
 # load_dotenv()
 # ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
@@ -122,31 +133,32 @@ def upload_file():
     
     
     FILENAME = file.filename
-    print(f"Nombre del archivo subido: {FILENAME}")
+    logger.info(f"main.py - upload_file - 01 - Nombre del archivo subido: {FILENAME}")
     # Asegurarse de que el directorio existe (por si acaso)
     os.makedirs(SAVE_FOLDER, exist_ok=True)
 
     file_path = os.path.join(SAVE_FOLDER, file.filename)
-    print(f"Guardando archivo en: {file_path}")
+    logger.info(f"main.py - upload_file - 02 - Guardando archivo en: {file_path}")
     file.save(file_path)
-    print(f"El archivo se llama: {file.filename}")
+    logger.info(f"main.py - upload_file - 03 - El archivo se llama: {file.filename}")
 
     filename_sin_extension = file.filename.split('.')
     
     nombre_archivo_procesado = "procesado_" + filename_sin_extension[0] + ".docx"
-    print(f"Nombre de mi archivo procesado {nombre_archivo_procesado}")
+    logger.info(f"main.py - upload_file - 04 - Nombre de mi archivo procesado {nombre_archivo_procesado}")
     documento_salida = os.path.join('/app/shared-files/diario_procesado/', nombre_archivo_procesado)
  
     nombre_archivo_ssml = "ssml_" + filename_sin_extension[0] + ".xml"
-    print(f"Nombre de mi archivo ssml {nombre_archivo_ssml}")
+    logger.info(f"main.py - upload_file - 05 - Nombre de mi archivo ssml {nombre_archivo_ssml}")
     xml_salida = os.path.join('/app/shared-files/diario_ssml/', nombre_archivo_ssml)
     
     extraer_texto_resaltado(file_path, documento_salida)
-    print("Procese el documento y extraje lo resaltado, vamos bien")
+    logger.info("main.py - upload_file - 06 - Procese el documento y extraje lo resaltado, vamos bien")
     
     palabras_caracteres = convertir_a_formato_ssml(documento_salida, xml_salida)
     tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(xml_salida)
-    print ({"status": "OK", "Cantidad de palabras en SSML:": palabras_caracteres[0], "Cantidad de caracteres en SSML": palabras_caracteres[1], "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo })
+    response_data = {"status": "OK", "Cantidad de palabras en SSML:": palabras_caracteres[0], "Cantidad de caracteres en SSML": palabras_caracteres[1], "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo }
+    logger.info (f"main.py - upload_file - 06 - {response_data}")
     
     return jsonify({"palabras:": palabras_caracteres[0], "caracteres": palabras_caracteres[1], "tamanio" : tamanio_megabytes_archivo }), 200
 
@@ -163,8 +175,8 @@ def descargar_doc_procesado():
     
     file_path = os.path.join("procesados/", filename)
     
-    print(f"Buscando archivo en: {file_path}")  # Debug
-    print(f"Archivo existe: {os.path.exists(file_path)}")  # Debug
+    logger.info (f"main.py - descargar_doc_procesado - 01 - Buscando archivo en: {file_path}")  # Debug
+    logger.info (f"main.py - descargar_doc_procesado - 02 - Archivo existe: {os.path.exists(file_path)}")  # Debug
 
     if not os.path.exists(file_path):
         return jsonify({'error': 'File not found'}), 404
@@ -176,7 +188,7 @@ def descargar_doc_procesado():
             
         # Debug: información del archivo
         file_stats = os.stat(file_path)
-        print(f"Tamaño del archivo: {file_stats.st_size} bytes")
+        logger.info (f"main.py - descargar_doc_procesado - 03 - Tamaño del archivo: {file_stats.st_size} bytes")
         
         return send_file(
             file_path,
@@ -185,7 +197,7 @@ def descargar_doc_procesado():
             conditional=True  # Esto permite el 304 para cache, pero fuerza descarga si es necesario
         )
     except Exception as e:
-        print(f"Error al enviar archivo: {e}")
+        logger.info (f"main.py - descargar_doc_procesado - 04 - Error al enviar archivo: {e}")
         return jsonify({'error': f'Error downloading file: {str(e)}'}), 500
 
 def extraer_texto_resaltado(input_path, output_path):
@@ -247,14 +259,14 @@ def extraer_texto_resaltado(input_path, output_path):
         # Guardar el documento
         nuevo_doc.save(output_path)
 
-        print(f"¡Proceso completado! Texto extraído guardado en: {output_path}")
+        logger.info (f"main.py - extraer_texto_resaltado - 01 - ¡Proceso completado! Texto extraído guardado en: {output_path}")
         return output_path  # Devolver la ruta del archivo guardado
         
     except Heading1NotFoundException as e:
-        print(f"Error: {str(e)}")
+        logger.info (f"main.py - extraer_texto_resaltado - 02 - Error: {str(e)}")
         raise
     except Exception as e:
-        print(f"Error al procesar el documento: {str(e)}")
+        logger.info (f"main.py - extraer_texto_resaltado - 03 - Error al procesar el documento: {str(e)}")
         raise
 
 def contar_cantidad_de_palabras(texto):
@@ -339,10 +351,10 @@ def convertir_a_formato_ssml(input_path,output_path):
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(ssml_output_pretty_xml)
             
-        print(f"¡SSML generado y guardado en: {output_path}!")
+        logger.info (f"main.py - convertir_a_formato_ssml - 01 - ¡SSML generado y guardado en: {output_path}!")
         return [cantidad_palabras, cantidad_caracteres]
     except Exception as e:
-        print(f"Error al convertir a SSML: {str(e)}")
+        logger.info (f"main.py - convertir_a_formato_ssml - 02 - Error al convertir a SSML: {str(e)}")
     # Obtener el nombre del archivo del cuerpo de la solicitud
     base_url = "http://localhost:5001/"
     url = base_url + filename
@@ -369,61 +381,38 @@ def generar_audio():
     url = f"http://api-proxy:5000/api_proxy/generar_audio?filename={filename}"
     response = requests.get(url)
 
-    print(f"Generando audio para el archivo: {response}")
+    logger.info(f"main.py - generar_audio - 01 - Generando audio para el archivo: {response}")
 
     if response.status_code == 200:
         try:
             result = response.json()            
             # Crear nombre de archivo para el audio
-            filename_sin_extension = filename.split('.')
-            audio_filename = f"procesado_{filename_sin_extension[0]}.wav"
-            extension = "wav"
-            destino_local = AUDIO_FOLDER
-            os.makedirs(destino_local, exist_ok=True)
-            audio_path = os.path.join(destino_local, audio_filename)
+            # filename_sin_extension = filename.split('.')
+            # audio_filename = f"{filename_sin_extension[0]}.wav"
+            # extension = "wav"
+            # destino_local = AUDIO_FOLDER
+            # os.makedirs(destino_local, exist_ok=True)
+            # audio_path = os.path.join(destino_local, audio_filename)
 
-            print(f"Path del audio: {audio_path}")
+            # logger.info(f"main.py - generar_audio - 02 - Path del audio: {audio_path}")
 
             # if os.path.exists(audio_path):
-            return jsonify({"status": "OK", "message": "Archivo de audio generado", "audio_file": audio_filename}), 200
+            return jsonify({"status": "OK", "message": "Archivo de audio generado", "public_audio_url": result.get('public_audio_url')}), 200
             # else:
             #     print("El archivo de audio no fue encontrado después de la generación.")
             #     return jsonify({"status": "ERROR", "message": "Archivo de audio no se guardo"}), 500
         except Exception as e:
-            print(f"Error procesando audio: {e}")
+            logger.info(f"main.py - generar_audio - 03 - Error procesando audio: {e}")
             return jsonify({"status": "ERROR", "message": f"Error procesando audio: {e}"}), 500
     else:
-        print(f"Error llamando a api-proxy: {response.status_code}")
+        logger.info(f"main.py - generar_audio - 04 - Error llamando a api-proxy: {response.status_code}")
         return jsonify({"status": "ERROR", "message": "Error llamando a api-proxy"}), 500
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    return jsonify({"status": "OK", "message": "API funcionando"})
+    respuesta = {"status": "OK", "message": "API funcionando"}
+    logger.info(respuesta)
+    return jsonify(respuesta), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-# if __name__ == "__main__":
-#     # Configurar rutas de entrada y salida
-#     # este documento lo ingresa el usuario y el documento de salida tendra el mismo nombre pero con _resaltado
-#     path_entrada = "/home/brian/Repositorio/app-generar-audio-portal-diario-ejes/diario_pintado/"
-#     documento_entrada = path_entrada + "test" + ".docx"  # Cambia por la ruta de tu documento
-#     path_salida = "/home/brian/Repositorio/app-generar-audio-portal-diario-ejes/diario_procesado/"
-#     documento_salida = path_salida + "test" + "resaltado" + ".docx"
-#     path_salida = "/home/brian/Repositorio/app-generar-audio-portal-diario-ejes/diario_ssml/"
-#     xml_salida = path_salida + "test" + "formato_ssml" + ".xml"
-    
-
-#     # Verificar si el archivo de entrada existe
-#     if not os.path.exists(documento_entrada):
-#         print(f"Error: El archivo {documento_entrada} no existe.")
-#     else:
-#         # Ejecutar la función principal
-#         extraer_texto_resaltado(documento_entrada, documento_salida)
-#         palabras_caracteres = convertir_a_formato_ssml(documento_salida, xml_salida)
-#         tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(xml_salida)
-
-#         print(f"Cantidad de palabras en SSML: {palabras_caracteres[0]}")
-#         print(f"Cantidad de caracteres en SSML: {palabras_caracteres[1]}")
-#         print(f"Tamaño del archivo SSML en megabytes: {tamanio_megabytes_archivo}")
-

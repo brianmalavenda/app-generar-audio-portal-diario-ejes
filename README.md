@@ -138,6 +138,39 @@ Notas:
 5. Una vez que queda separada la api-gateway del back y del front, considero esta parte como otra app. Esto implica que tiene su propias variables de entorno, dependencias, file system, etc. Esto se traducirá en un contenedor docker que simulará otro servidor. Para eso primero creamos un dockerfile para crear la imagen de la app. Luego con un archivo docker-compose.yml podemos orquestar los contenedores y dejarlo listo para que al levantarlo podamos desde afuera acceder a la API desde http://localhost:8000
 
 
+## GOOGLE CLOUD BUCKET
+
+https://console.cloud.google.com/storage/browser/audios-text-to-speech-01;tab=permissions?forceOnBucketsSortingFiltering=true&hl=es-419&project=rugged-feat-471218-r8&prefix=&forceOnObjectsSortingFiltering=false
+
+Hicimos de acceso público el bucket ya que contiene solo los audios sintetizados y la metadata. Tendríamos que evaluar si hay riesgos de seguridad haciendo esto.
+
+Esta arquitectura
+Google Cloud Storage (Bucket) → URL Pública/Signed URL → Frontend (Descarga directa)
+
+quizas lo más seguro sea generar una URL temporal firmada (Signed URLs) para descargar los audios. Esto deberíamos probar si sirve para descargar los audios y para poder utilizarlos como fuente de lectura al momento de querer reproducirlos desde el navegador
+
+def generate_signed_url(bucket_name, audio_filename, expiration_hours=24):
+    """Genera una URL temporal firmada"""
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(f"audios/{audio_filename}")
+    
+    # Verificar que existe
+    if not blob.exists():
+        return None
+    
+    # Generar URL firmada por 24 horas
+    signed_url = blob.generate_signed_url(
+        expiration=datetime.timedelta(hours=expiration_hours),
+        method="GET"
+    )
+    
+    return signed_url
+
+# Uso
+signed_url = generate_signed_url("audios-text-to-speech-01", audio_filename)
+
+
 ## EJECUTAR CONTENEDORES
 
 sudo docker build -t backend-python-images .
@@ -194,3 +227,5 @@ https://console.cloud.google.com/storage/browser/audios-text-to-speech-01;tab=ob
 
 # LOGS de los contenedores activos
 docker-compose logs -f
+
+docker logs -f backend-container

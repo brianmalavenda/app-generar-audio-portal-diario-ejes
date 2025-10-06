@@ -6,6 +6,17 @@ from gcloud_SA_access import get_access_token_service_account, get_project_id_se
 from utils import leer_docx_completo, procesar_archivo 
 from dataclasses import dataclass
 import json
+import logging
+import sys
+
+# Configurar logging para que vaya a stdout (se captura con docker logs)
+logging.basicConfig(
+    level=logging.DEBUG,  # Nivel de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:3000","http://localhost"])
@@ -128,9 +139,9 @@ def generar_audio():
         if not os.path.exists(documento_salida):
             return f"Archivo no encontrado: {documento_salida}", 404
         text = procesar_archivo(documento_salida)
-        print("Contenido del archivo leído correctamente")
+        logger.info(f"api-proxy - main.py - generar_audio - 01 - Contenido del archivo leído correctamente")
     except Exception as e:
-        print(f"Error leyendo archivo SSML: {e}")
+        logger.info(f"api-proxy - main.py - generar_audio - 02 - Error leyendo archivo SSML: {e}")
         return f"Error leyendo archivo: {e}", 500
 
     # text_size = len(text.encode('utf-8'))
@@ -154,14 +165,14 @@ def generar_audio():
     try:
         result = synthesize_speech(gcloud_session, file_syntetized)   
         
-        print(f"Resultado de la síntesis: {json.dumps(result)[:100]}...")  # Imprime solo los primeros 100 caracteres del resultado
+        logger.info(f"api-proxy - main.py - generar_audio - 03 - Resultado de la síntesis: {json.dumps(result)[:100]}...")  # Imprime solo los primeros 100 caracteres del resultado
 
         if result and result.get('estado') == 'exito':
-            return jsonify({'status': 'success', 'message': 'Audio generated successfully'},200)
+            return jsonify({'status': 'success', 'message': 'Audio generated successfully', 'public_audio_url':{result.get('public_url')}},200)
         else:
             return jsonify({'status': 'error', 'message': 'Audio synthesis failed'}, 500)    
     except Exception as e:
-        print(f"Error en generar_audio: {str(e)}")
+        logger.info(f"api-proxy - main.py - generar_audio - 04 - Error en generar_audio: {str(e)}")
         return jsonify({'error': 'Internal server error'}, 500)
     
 @app.get("/api_proxy/health")
