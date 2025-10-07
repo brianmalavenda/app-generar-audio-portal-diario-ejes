@@ -155,9 +155,7 @@ const App: React.FC = () => {
           // Construir la URL del audio
           const audioName = `procesado_${filename.split('.').slice(0, -1).join('.')}`;
           // generar un enlace al recurso que se encuentra en el backend en la carpeta app/shared-files/audio
-          // const audioUrl = `http://localhost:5000/shared-files/audio/${audioName}.wav`;
           const audioUrl = data.public_audio_url;
-          // const audioUrl = `http://localhost:5000/audio/${data.audio_file}`;
           console.log(audioUrl)
 
           setAudioState({
@@ -184,16 +182,23 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleDownloadAudio = useCallback(() => {
-    if (audioState.audioUrl && audioState.audioName) {
-      const a = document.createElement('a');
-      a.href = audioState.audioUrl;
-      a.download = audioState.audioUrl; //`${audioState.audioName}.wav`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-  }, [audioState.audioUrl, audioState.audioName]);
+  // const handleDownloadAudio = useCallback(() => {
+  //   if (audioState.audioUrl && audioState.audioName) {
+  //     const a = document.createElement('a');
+  //     const url = audioState.audioUrl;
+
+  //     a.href = audioState.audioUrl;      
+  //     const fileName = url.split("/").pop()?.split("?")[0] || "audio_generado.wav";
+  //     console.log("fileName: ", fileName);
+  //     console.log("audioState.audioName: ", audioState.audioName);
+      
+  //     a.download = fileName;
+
+  //     document.body.appendChild(a);
+  //     a.click();
+  //     document.body.removeChild(a);
+  //   }
+  // }, [audioState.audioUrl, audioState.audioName]);
 
   const handleDownloadText = async (filename: string) => {
     try {
@@ -228,6 +233,56 @@ const App: React.FC = () => {
       alert('Error al descargar el archivo');
     }
   };
+
+  const handleDownloadAudio = useCallback(async () => {
+  if (audioState.audioUrl && audioState.audioName) {
+    try {
+      console.log("🎯 Iniciando descarga...");
+      console.log("URL del audio:", audioState.audioUrl);
+      console.log("Nombre del audio:", audioState.audioName);
+
+      // Hacer una solicitud para obtener el blob del audio
+      const response = await fetch(audioState.audioUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Error al obtener el audio: ${response.status}`);
+      }
+
+      // Convertir la respuesta a un blob
+      const audioBlob = await response.blob();
+      
+      // Crear una URL local para el blob
+      const blobUrl = URL.createObjectURL(audioBlob);
+      
+      // Crear elemento anchor para descarga
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      
+      // Usar el nombre del audio desde el estado o extraerlo de la URL
+      const fileName = audioState.audioName.endsWith('.wav') 
+        ? audioState.audioName 
+        : `${audioState.audioName}.wav`;
+      
+      a.download = fileName;
+      a.style.display = 'none';
+      
+      document.body.appendChild(a);
+      a.click();
+      
+      // Limpiar
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+      
+      console.log("✅ Descarga iniciada correctamente");
+      
+    } catch (error) {
+      console.error('❌ Error descargando audio:', error);
+      
+      // Fallback: abrir en nueva pestaña
+      window.open(audioState.audioUrl, '_blank');
+    }
+  }
+}, [audioState.audioUrl, audioState.audioName]);
 
   const AudioPlayer = () => {
     if (!audioState.audioUrl) return null;

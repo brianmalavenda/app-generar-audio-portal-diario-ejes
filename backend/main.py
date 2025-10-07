@@ -379,13 +379,12 @@ def generar_audio():
         return "Filename es requerido", 400
     
     url = f"http://api-proxy:5000/api_proxy/generar_audio?filename={filename}"
-    response = requests.get(url)
-
-    logger.info(f"main.py - generar_audio - 01 - Generando audio para el archivo: {response}")
+    response = requests.get(url)    
 
     if response.status_code == 200:
         try:
-            result = response.json()            
+            result = response.json()     
+            logger.info(f"main.py - generar_audio - 01 - Generando audio para el archivo: {result[0]}")
             # Crear nombre de archivo para el audio
             # filename_sin_extension = filename.split('.')
             # audio_filename = f"{filename_sin_extension[0]}.wav"
@@ -397,7 +396,7 @@ def generar_audio():
             # logger.info(f"main.py - generar_audio - 02 - Path del audio: {audio_path}")
 
             # if os.path.exists(audio_path):
-            return jsonify({"status": "OK", "message": "Archivo de audio generado", "public_audio_url": result.get('public_audio_url')}), 200
+            return jsonify({"status": "OK", "message": "Archivo de audio generado", "public_audio_url": result[0]['public_audio_url']}), 200
             # else:
             #     print("El archivo de audio no fue encontrado después de la generación.")
             #     return jsonify({"status": "ERROR", "message": "Archivo de audio no se guardo"}), 500

@@ -173,6 +173,7 @@ signed_url = generate_signed_url("audios-text-to-speech-01", audio_filename)
 
 ## EJECUTAR CONTENEDORES
 
+sudo docker build -t api-proxy .
 sudo docker build -t backend-python-images .
 sudo docker build -t frontend-images .
 
