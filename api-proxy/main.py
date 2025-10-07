@@ -165,10 +165,18 @@ def generar_audio():
     try:
         result = synthesize_speech(gcloud_session, file_syntetized)   
         
-        logger.info(f"api-proxy - main.py - generar_audio - 03 - Resultado de la síntesis: {json.dumps(result)[:100]}...")  # Imprime solo los primeros 100 caracteres del resultado
+        logger.info(f"api-proxy - main.py - generar_audio - 03 - Resultado de la síntesis: {result}")  # Imprime solo los primeros 100 caracteres del resultado
+        if result:
+            ok = result.get('status') == 'success'
+            public_url = result.get('public_url')
+        else:
+            ok = False
 
-        if result and result.get('estado') == 'exito':
-            return jsonify({'status': 'success', 'message': 'Audio generated successfully', 'public_audio_url':{result.get('public_url')}},200)
+        logger.info(f"-------api-proxy - main.py - generar_audio - 04 - Estado de la síntesis: {ok}")
+        
+        if ok:
+            logging.info(f"public url: {public_url}")
+            return jsonify({'status': 'success', 'message': 'Audio generated successfully', 'public_audio_url': public_url},200)
         else:
             return jsonify({'status': 'error', 'message': 'Audio synthesis failed'}, 500)    
     except Exception as e:
