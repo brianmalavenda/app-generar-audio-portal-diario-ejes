@@ -19,7 +19,7 @@ command_exists() {
 
 # Verificar que estamos en el directorio correcto
 check_directory() {
-    if [[ ! -f "../docker-compose.yml" ]]; then
+    if [[ ! -f "docker-compose.yml" ]]; then
         print_color "Error: No se encuentra docker-compose.yml en el directorio actual" "$RED"
         print_color "Ejecuta este script desde la raíz de tu proyecto" "$YELLOW"
         exit 1
