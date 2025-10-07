@@ -2,7 +2,8 @@ import os
 import json
 from google.oauth2 import service_account
 import google.auth.transport.requests
-from google.cloud import texttospeech
+from google.cloud import texttospeech, storage
+from datetime import datetime, timedelta
 import requests
 from dataclasses import dataclass
 import time
@@ -69,6 +70,7 @@ def make_audio_public(bucket_name, audio_filename):
     """Hace público un archivo de audio ya existente en el bucket"""
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
+    # Especificar el blob (archivo) dentro del bucket
     blob = bucket.blob(audio_filename)
     
     # Hacer el archivo público
@@ -142,7 +144,7 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
                     with open(audio_path, "wb") as audio_file:
                         audio_file.write(audio_data)
                     
-                    public_url = make_audio_public(bucket_name, f"audios/{audio_filename}")
+                    public_url = make_audio_public(bucket_name, f"{audio_filename}")
                     logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 02 - Audio guardado en: {public_url}")
                     
                     return {
