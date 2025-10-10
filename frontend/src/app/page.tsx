@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [fileStats, setFileStats] = useState<FileStats | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadMessage, setUploadMessage] = useState<string>("");
+  const [isDownloading, setIsDownloading] = useState(false);    
   const [audioState, setAudioState] = useState<AudioState>({
     isGenerating: false,
     audioUrl: null,
@@ -235,6 +236,47 @@ const App: React.FC = () => {
   };
 
   const handleDownloadAudio = useCallback(async () => {
+      setIsDownloading(true);
+      
+      try {
+        console.log("🎯 Iniciando descarga del audio...");
+        
+        const response = await fetch(audioState.audioUrl);
+        
+        if (!response.ok) {
+          throw new Error(`Error al obtener el audio: ${response.status}`);
+        }
+
+        const audioBlob = await response.blob();
+        const blobUrl = URL.createObjectURL(audioBlob);
+        
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        
+        const audioName = audioState.audioName
+          ? `${audioState.audioName.replace(/\.[^/.]+$/, "")}.wav`
+          : 'audio_generado.wav';
+        
+        a.download = audioName;
+        a.style.display = 'none';
+        
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+        
+        console.log("✅ Descarga completada:", audioState.audioName);
+        
+      } catch (error) {
+        console.error('❌ Error descargando audio:', error);
+        alert('No se pudo descargar el audio. Se abrirá en una nueva pestaña.');
+        window.open(audioState.audioUrl, '_blank');
+      } finally {
+        setIsDownloading(false);
+      }
+    }, [audioState.audioUrl, audioState.audioName]);
+
+  const handleDownloadAudio_2 = useCallback(async () => {
   if (audioState.audioUrl && audioState.audioName) {
     try {
       console.log("🎯 Iniciando descarga...");
@@ -295,14 +337,25 @@ const App: React.FC = () => {
             <source src={audioState.audioUrl} type="audio/wav" />
             Tu navegador no soporta el elemento de audio.
           </audio>
+          
           <button
             onClick={handleDownloadAudio}
-            className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300 flex items-center justify-center whitespace-nowrap"
+            disabled={isDownloading}
+            className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium py-2 px-4 rounded-lg transition duration-300 flex items-center justify-center whitespace-nowrap"
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Descargar audio
+            {isDownloading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Descargando...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Descargar audio
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -371,7 +424,7 @@ const App: React.FC = () => {
                   </div>
                 )}
                 
-                {fileStats && (
+                {/* {fileStats && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 w-full max-w-md">
                     <div className="bg-white rounded-lg p-4 shadow-sm border flex flex-col items-center justify-center">
                       <p className="text-sm text-gray-500">Tamaño</p>
@@ -386,7 +439,7 @@ const App: React.FC = () => {
                       <p className="text-lg font-semibold text-gray-800">{fileStats.caracteres}</p>
                     </div>
                   </div>
-                )}
+                )} */}
               </div>
 
               {/* Reproductor de Audio */}
