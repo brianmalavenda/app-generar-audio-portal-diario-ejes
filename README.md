@@ -170,6 +170,14 @@ def generate_signed_url(bucket_name, audio_filename, expiration_hours=24):
 # Uso
 signed_url = generate_signed_url("audios-text-to-speech-01", audio_filename)
 
+# Acceso publico y configuracion de CORS
+
+Es necesario aplicar esta configuración porque desde el navegador Google Cloud no te deja descargar directamente el audio por políticas de CORS.
+
+gsutil cors set google_cors.json gs://audios-text-to-speech-01 
+gsutil cors get gs://audios-text-to-speech-01 
+
+
 
 ## EJECUTAR CONTENEDORES
 
