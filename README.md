@@ -193,7 +193,7 @@ docker run -it -p 5001:5000 -v $(pwd)/shared:/app/shared-files --name api-proxy-
 docker run -it -p 5001:5000 --name api-proxy-container api-proxy:latest
 
 docker run -it -p 5000:5000 -v $(pwd)/shared:/app/shared-files --name backend-container  --network tts-network backend:latest
-docker run -it -p 3000:3000 --name frontend-container --network tts-network frontend:latest
+docker run -it -p 3000:3000 --name frontend-container frontend:latest
 
 <!-- entrar dentro de mi contenedor -->
 docker exec -it backend-container-api /bin/bash
@@ -238,3 +238,38 @@ https://console.cloud.google.com/storage/browser/audios-text-to-speech-01;tab=ob
 docker-compose logs -f
 
 docker logs -f backend-container
+
+# DESCARGAR AUDIO
+
+Es necesario que guardemos en el servidor el audio ya que para compartirlo por telegram o luego por whatsapp debemos compartirlo desde el servidor.
+
+### Bot de telegram
+Done! Congratulations on your new bot. You will find it at t.me/PortalDiariosBot. You can now add a description, about section and profile picture for your bot, see /help for a list of commands. By the way, when you've finished creating your cool bot, ping our Bot Support if you want a better username for it. Just make sure the bot is fully operational before you do this.
+
+Use this token to access the HTTP API:
+8446173738:AAE6wfhkh3oEx0YheU99VolGF3kY10prZTg
+Keep your token secure and store it safely, it can be used by anyone to control your bot.
+
+For a description of the Bot API, see this page: https://core.telegram.org/bots/api
+
+
+npm install node-telegram-bot-api
+npm install -D @types/node-telegram-bot-api
+
+
+Aquí está la secuencia que funcionó para mí después de luchar durante varias horas:
+
+Supongamos que el nombre del bot es mi_bot.
+
+1- Agrega el bot al grupo.
+Vaya al grupo, haga clic en el nombre del grupo, haga clic en Agregar miembros, en el cuadro de búsqueda busque su bot de esta manera: @my_bot, seleccione su bot y haga clic en agregar.
+
+2- Envía un mensaje ficticio al bot.
+Puedes utilizar este ejemplo: /my_id @my_bot
+(Probé algunos mensajes, no todos funcionan. El ejemplo anterior funciona bien. Quizás el mensaje debería comenzar con /)
+
+3- Vaya a la siguiente URL: https://api.telegram.org/botXXX:YYYY/getUpdates
+Reemplaza XXX:YYYY con tu token de bot
+
+4- Busque "chat":{"id":-zzzzzzzzzz,
+-zzzzzzzzzz es tu ID de chat (con el signo negativo).

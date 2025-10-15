@@ -386,14 +386,14 @@ def generar_audio():
             result = response.json()     
             logger.info(f"main.py - generar_audio - 01 - Generando audio para el archivo: {result[0]}")
             # Crear nombre de archivo para el audio
-            # filename_sin_extension = filename.split('.')
-            # audio_filename = f"{filename_sin_extension[0]}.wav"
-            # extension = "wav"
-            # destino_local = AUDIO_FOLDER
-            # os.makedirs(destino_local, exist_ok=True)
-            # audio_path = os.path.join(destino_local, audio_filename)
+            filename_sin_extension = filename.split('.')
+            audio_filename = f"{filename_sin_extension[0]}.wav"
+            extension = "wav"
+            destino_local = AUDIO_FOLDER
+            os.makedirs(destino_local, exist_ok=True)
+            audio_path = os.path.join(destino_local, audio_filename)
 
-            # logger.info(f"main.py - generar_audio - 02 - Path del audio: {audio_path}")
+            logger.info(f"main.py - generar_audio - 02 - Path del audio: {audio_path}")
 
             # if os.path.exists(audio_path):
             return jsonify({"status": "OK", "message": "Archivo de audio generado", "public_audio_url": result[0]['public_audio_url']}), 200
