@@ -5,6 +5,7 @@ set -e
 mkdir -p /app/shared-files/diario_pintado
 mkdir -p /app/shared-files/diario_procesado
 mkdir -p /app/shared-files/diario_ssml
+mkdir -p /app/shared-files/audio
 
 # Verificar que los directorios se crearon
 echo "Directorios creados en: /app/shared-files/"

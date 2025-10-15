@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useCallback } from "react";
+import { TelegramController } from "../telegram/telegram.controller";
 
 interface FileStats {
   palabras: number;
@@ -276,56 +277,6 @@ const App: React.FC = () => {
       }
     }, [audioState.audioUrl, audioState.audioName]);
 
-  const handleDownloadAudio_2 = useCallback(async () => {
-  if (audioState.audioUrl && audioState.audioName) {
-    try {
-      console.log("🎯 Iniciando descarga...");
-      console.log("URL del audio:", audioState.audioUrl);
-      console.log("Nombre del audio:", audioState.audioName);
-
-      // Hacer una solicitud para obtener el blob del audio
-      const response = await fetch(audioState.audioUrl);
-      
-      if (!response.ok) {
-        throw new Error(`Error al obtener el audio: ${response.status}`);
-      }
-
-      // Convertir la respuesta a un blob
-      const audioBlob = await response.blob();
-      
-      // Crear una URL local para el blob
-      const blobUrl = URL.createObjectURL(audioBlob);
-      
-      // Crear elemento anchor para descarga
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      
-      // Usar el nombre del audio desde el estado o extraerlo de la URL
-      const fileName = audioState.audioName.endsWith('.wav') 
-        ? audioState.audioName 
-        : `${audioState.audioName}.wav`;
-      
-      a.download = fileName;
-      a.style.display = 'none';
-      
-      document.body.appendChild(a);
-      a.click();
-      
-      // Limpiar
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-      
-      console.log("✅ Descarga iniciada correctamente");
-      
-    } catch (error) {
-      console.error('❌ Error descargando audio:', error);
-      
-      // Fallback: abrir en nueva pestaña
-      window.open(audioState.audioUrl, '_blank');
-    }
-  }
-}, [audioState.audioUrl, audioState.audioName]);
-
   const AudioPlayer = () => {
     if (!audioState.audioUrl) return null;
 
@@ -358,6 +309,89 @@ const App: React.FC = () => {
             )}
           </button>
         </div>
+      </div>
+    );
+  };
+  
+  // Función para compartir en Telegram
+  // const handleShareTelegram = useCallback(() => {
+  //   if (!audioState.audioUrl) {
+  //     alert('Primero debe generar el audio');
+  //     return;
+  //   }
+
+    // const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(audioState.audioUrl)}&text=${encodeURIComponent(text)}`;
+    // window.open(telegramUrl, '_blank', 'width=600,height=400');
+  // }, [audioState.audioUrl]);
+
+  const shareDocumentToTelegram = useCallback( async () => {
+    const __filename = "procesado_test_04.docx";
+    try {
+      const response = await fetch('http://localhost:3000/telegram/share-files', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          'chatId': '-828250861',
+          'fileName': __filename
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        console.log('✅ Documento compartido exitosamente');
+        alert('Documento enviado a Telegram correctamente');
+        return true;
+      } else {
+        console.error('❌ Error:', result.message);
+        alert(`Error: ${result.message}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Error de conexión:', error);
+      alert('Error de conexión con el servidor');
+      return false;
+    }
+  },[audioState.audioName]);
+
+  // Función para compartir en WhatsApp
+  const handleShareWhatsApp = useCallback(() => {
+    if (!audioState.audioUrl) {
+      alert('Primero debe generar el audio');
+      return;
+    }
+
+    const text = `¡Escucha este audio generado! ${audioState.audioUrl}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(whatsappUrl, '_blank', 'width=600,height=400');
+  }, [audioState.audioUrl]);
+  
+  // Componente para los botones de compartir flotantes
+  const ShareButtons = () => {
+    // if (!audioState.audioUrl) return null;
+
+    return (
+      <div className="fixed bottom-6 right-6 flex flex-col gap-4 z-50">
+        {/* Botón de WhatsApp */}
+        <button
+          onClick={handleShareWhatsApp}
+          // className="w-20 h-20 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 transform hover:scale-110"
+          className="flex items-center justify-center transition-all duration-300 transform hover:scale-110"
+          title="Compartir en WhatsApp"
+        >
+        <img src="/icons/whatsapp.svg" alt="WhatsApp" className="w-14 h-14" />
+        </button>
+
+        {/* Botón de Telegram */}
+        <button
+          onClick={shareDocumentToTelegram}
+          className="flex items-center justify-center transition-all duration-300 transform hover:scale-110"
+          title="Compartir en Telegram"
+        >
+        <img src="/icons/telegram.svg" alt="Telegram" className="w-12 h-12" />
+        </button>
       </div>
     );
   };
@@ -508,6 +542,7 @@ const App: React.FC = () => {
             </div>
           )}
         </div>
+        <ShareButtons/>
       </div>
     </div>
   );
