@@ -33,7 +33,7 @@ class GoogleCloud:
     token: str = ""
 
 load_dotenv()
-## Este endpoint recibe el archivo a sintetizar a audio
+## Este endpoint recibe el archivo a sintetizar a audio, descargo el audio
 @app.route('/api_proxy/sintetizar_audio', methods=['POST'])
 def generar_audio_from_file():
     print(f"Esto es lo que recibi como archivo: {request.files}")
