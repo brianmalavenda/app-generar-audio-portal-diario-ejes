@@ -183,6 +183,7 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
         timeout_minutes = 30
         timeout_seconds = timeout_minutes * 60
         vueltas = 0
+
         while True:
         # Verificar timeout
         if time.time() - start_time > timeout_seconds:
@@ -206,18 +207,19 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
                 "codigo":"004",
                 "respuesta": f"Error consultando operación: {op_response.text}"
             }
-        
-        operation_data = op_response.json()
-        logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 02 - Estado de operación: {operation_data}")
-        done = operation_data.get("done", False)
-        
-        # Verificar si terminó
-        if done:
-            break #Salgo del loop while
+        else:        
+            operation_data = op_response.json()
+            logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 02 - Estado de operación: {operation_data}")
+            done = operation_data.get("done", False)
+            # Verificar si terminó
+            if done:
+                break #Salgo del loop while
 
+    # Despues del While True
     logger.info("✅ Operación completada")
 
     if "error" in operation_data: 
+        # Si la operación terminó, pero terminó con error, devuelvo eso como estado de la respuesta
         return {
             "estado": "error",
             "size_audio":"large",
@@ -225,9 +227,9 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
             "respuesta": operation_data["error"].get("message", "Error desconocido")                    
         }
     else:
+        # Descargo el audio generado
         if response and 'audioContent' in response:
             try:
-                # Descargo el audio generado
                 import base64
                 audio_data = base64.b64decode(response['audioContent'])
                 os.makedirs(destino_local, exist_ok=True)
@@ -252,47 +254,6 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
                 "codigo":"002",
                 "respuesta": response.text
             }
-                
-def descargar_audio_gs(gcloud, bucket_name, audio_name, destino_local):
-    """
-    Descarga un audio desde Google Cloud Storage
-    
-    Args:
-        gcloud: Objeto con token y project_id
-        bucket_name: Nombre del bucket (audios-text-to-speech-01)
-        audio_name: Nombre del archivo en el bucket (audio_test_01.wav)
-        destino_local: Ruta local donde guardar el archivo
-    """
-    
-    # URL de la API de Google Cloud Storage
-    url = f"https://storage.googleapis.com/storage/v1/b/{bucket_name}/o/{audio_name}?alt=media"
-    
-    headers = {
-        "Authorization": f"Bearer {gcloud.token}",
-        "x-goog-user-project": gcloud.project_id
-    }
-    
-    try:
-        response = requests.get(url, headers=headers, stream=True)
-        
-        if response.status_code == 200:
-            # Asegurar que el directorio destino existe
-            os.makedirs(os.path.dirname(destino_local), exist_ok=True)
-            
-            # Guardar el archivo
-            with open(destino_local, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            
-            logger.info(f"api-proxy - gcloud_SA_access.py - descargar_audio_gs - 01 - ✅ Audio descargado exitosamente: {destino_local}")
-            return True
-        else:
-            logger.info(f"api-proxy - gcloud_SA_access.py - descargar_audio_gs - 02 - ❌ Error descargando audio: {response.status_code} - {response.text}")
-            return False
-            
-    except Exception as e:
-        logger.info(f"api-proxy - gcloud_SA_access.py - descargar_audio_gs - 03 - ❌ Error en descarga: {e}")
-        return False
 
 def monitorear_operacion_hasta_terminar(gcloud_session, operation_name, access_token, bucket_name, audio_filename):
     """Monitorea hasta que la operación termine REALMENTE"""
