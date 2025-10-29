@@ -150,13 +150,13 @@ const App: React.FC = () => {
 
       if (response.ok) {            
         const data = await response.json();
-        
-        if (data.status === "OK") {
+        console.log("Audio generado?" + data);
+
+        if (data.status === "success") {
+          console.log("Audio generado con éxito:", data);
           // Construir la URL del audio
-          const audioName = `procesado_${filename.split('.').slice(0, -1).join('.')}`;
-          // generar un enlace al recurso que se encuentra en el backend en la carpeta app/shared-files/audio
-          const audioUrl = data.public_audio_url;
-          console.log(audioUrl)
+          const audioName = `procesado_${filename.split('.')[0]}.ogg`;
+          const audioUrl =  `http://localhost:5000${data.directoty}/${data.path}`;
 
           setAudioState({
             isGenerating: false,
@@ -164,6 +164,9 @@ const App: React.FC = () => {
             audioName: audioName,
             error: null
           });
+
+          const audio = new Audio(audioUrl);
+          audio.play();
         } else {
           throw new Error(data.message || 'Error generando audio');
         }
@@ -298,7 +301,7 @@ const App: React.FC = () => {
         <h3 className="text-lg font-semibold text-gray-800 mb-3">Audio Generado</h3>
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <audio controls className="flex-1">
-            <source src={audioState.audioUrl} type="audio/wav" />
+            <source src={audioState.audioUrl} type="audio/ogg" />
             Tu navegador no soporta el elemento de audio.
           </audio>
           <button
@@ -426,15 +429,15 @@ const App: React.FC = () => {
                 )} */}
               </div>
 
-              {/* Reproductor de Audio */}
-              <AudioPlayer />
-
               {/* Mensaje de error */}
               {audioState.error && (
                 <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">
                   Error: {audioState.error}
                 </div>
               )}
+
+              {/* Reproductor de Audio */}
+              <AudioPlayer />
 
               {/* Botones de acción */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">

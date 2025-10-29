@@ -158,13 +158,19 @@ deploy_compose() {
     
     print_color "Ejecutando docker-compose up..." "$YELLOW"
     docker-compose up -d
-    # docker stack deploy -c docker-compose.yml mi-app
+    # docker stack deploy -c docker-compose.yml app-audio
     
     print_color "Esperando que los servicios inicien..." "$YELLOW"
     sleep 10
     
     print_color "Estado de los contenedores:" "$YELLOW"
     docker-compose ps
+
+    # print_color "Estado de los servicios:" "$YELLOW"
+    # docker stack services app-audio
+    
+    # print_color "Estado de los contenedores:" "$YELLOW"
+    # docker stack ps app-audio
 }
 
 # Probar servicios

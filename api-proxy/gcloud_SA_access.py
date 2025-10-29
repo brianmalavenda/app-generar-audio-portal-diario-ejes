@@ -30,6 +30,24 @@ class GoogleCloud:
     project_id: str = ""
     token: str = ""
 
+def get_service_account_credentials():
+    """Obtiene token usando Service Account (mejor para Docker)"""
+        
+    # Leer credenciales desde variable de entorno
+    credentials_json = os.getenv('GOOGLE_TTS_API_KEY')
+
+    if credentials_json:
+        # Si las credenciales están en una variable de entorno
+        credentials_info = json.loads(credentials_json)
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_info,
+            scopes=['https://www.googleapis.com/auth/cloud-platform']
+        )
+        return credentials
+    else:
+        logger.error("GOOGLE_TTS_API_KEY no encontrada en variables de entorno")
+        return None
+        
 
 def get_access_token_service_account():
     """Obtiene token usando Service Account (mejor para Docker)"""
@@ -68,9 +86,10 @@ def get_project_id_service_account():
 
 def make_audio_public(bucket_name, audio_filename):
     """Hace público un archivo de audio ya existente en el bucket"""
-    credentials = get_access_token_service_account
+    credentials = get_access_token_service_account()
     storage_client = storage.Client(credentials=credentials)
     bucket = storage_client.bucket(bucket_name)
+
     # Especificar el blob (archivo) dentro del bucket
     blob = bucket.blob(audio_filename)
     
@@ -122,7 +141,6 @@ def generate_signed_url(bucket_name, audio_filename, expiration_hours=24):
     except Exception as e:
         logger.error(f"❌ Error generando URL firmada: {str(e)}")
         return None
-
 def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
     bucket_name = "audios-text-to-speech-01"
     destino_local = "/app/shared-files/audio"
@@ -132,11 +150,11 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
 
     if file.is_long:
         url = f"https://texttospeech.googleapis.com/v1beta1/projects/{gcloud.project_id}/locations/global:synthesizeLongAudio"
-        audio_encoding = "LINEAR16"  # Único soportado para audio largo
-        extension = ".wav" # No soporta el formato OGG_OPUS
+        audio_encoding = "LINEAR16"
+        extension = ".wav"
     else:
         url = "https://texttospeech.googleapis.com/v1/text:synthesize"
-        audio_encoding = "OGG_OPUS"  # Puedes usar MP3, OGG_OPUS, etc.
+        audio_encoding = "OGG_OPUS"
         extension = ".ogg"
 
     headers = {
@@ -147,7 +165,6 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
     
     data = {
         "input": {
-            # "ssml": text
             "text": file.content
         },
         "voice": {
@@ -160,23 +177,38 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
         }
     }
     
-    # Si el audio es largo tengo que agregar al cuerpo del POST la URI del bucket
+    # Para audio largo: especificar bucket destino
     if file.is_long:
         data["output_gcs_uri"] = f"gs://{bucket_name}/{file.name}{extension}"
 
     response = requests.post(url, headers=headers, data=json.dumps(data))
-    logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 01 - Respuesta de la api de grabacion de audio {response.json()}")
-
+    logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 01 - Status: {response.status_code}")
+    
     # Crear nombre de archivo para el audio
     audio_filename = f"{file.name}{extension}"
-    print(f"Este es el archivo de audio {audio_filename}")
     audio_path = os.path.join(destino_local, audio_filename)
     logger.info(f"file.is_long: {file.is_long}")
 
+    # AUDIO LARGO
     if file.is_long:
-        # Si el audio es largo
-        operation = response.json()["name"]
-        logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - XXX - Operación iniciada: {operation}, respuesta: {response.text}")  
+        if response.status_code != 200:
+            return {
+                "estado": "error",
+                "size_audio": "large",
+                "codigo": "001",
+                "respuesta": f"Error iniciando síntesis: {response.text}"
+            }
+            
+        operation = response.json().get("name")
+        if not operation:
+            return {
+                "estado": "error",
+                "size_audio": "large",
+                "codigo": "002",
+                "respuesta": "No se pudo obtener la operación de la respuesta"
+            }
+            
+        logger.info(f"Operación iniciada: {operation}")
         operation_url = f"https://texttospeech.googleapis.com/v1beta1/{operation}"
         
         start_time = time.time()
@@ -185,74 +217,144 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
         vueltas = 0
 
         while True:
-        # Verificar timeout
-        if time.time() - start_time > timeout_seconds:
-            return {
-                "estado": "timeout",
-                "size_audio":"large",
-                "codigo":"003",
-                "respuesta": f"Error - La operación excedió el tiempo límite de {timeout_minutes} minutos"
-            }
+            if time.time() - start_time > timeout_seconds:
+                return {
+                    "estado": "timeout",
+                    "size_audio": "large",
+                    "codigo": "003",
+                    "respuesta": f"Error - La operación excedió el tiempo límite de {timeout_minutes} minutos"
+                }
 
-        logger.info(f"Vuelta numero: {vueltas + 1}")    
-        # Esperar antes de consultar
-        time.sleep(5)
-        # Consultar estado de la operación
-        op_response = requests.get(operation_url, headers=headers)
-        
-        if op_response.status_code != 200:
+            logger.info(f"Vuelta numero: {vueltas + 1}")    
+            time.sleep(5)
+            
+            # Consultar estado de la operación
+            op_response = requests.get(operation_url, headers=headers)
+            
+            if op_response.status_code != 200:
+                return {
+                    "estado": "error",
+                    "size_audio": "large",
+                    "codigo": "004",
+                    "respuesta": f"Error consultando operación: {op_response.text}"
+                }
+                
+            operation_data = op_response.json()
+            logger.info(f"Estado de operación: {operation_data}")
+            
+            # Verificar si terminó
+            if operation_data.get("done", False):
+                break
+                
+            vueltas += 1
+
+        logger.info("✅ Operación completada")
+
+        # Verificar si hubo error en la operación
+        if "error" in operation_data:
             return {
                 "estado": "error",
-                "size_audio":"large",
-                "codigo":"004",
-                "respuesta": f"Error consultando operación: {op_response.text}"
+                "size_audio": "large",
+                "codigo": "005",
+                "respuesta": operation_data["error"].get("message", "Error desconocido")                    
             }
-        else:        
-            operation_data = op_response.json()
-            logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 02 - Estado de operación: {operation_data}")
-            done = operation_data.get("done", False)
-            # Verificar si terminó
-            if done:
-                break #Salgo del loop while
+        else:
+            # ✅ DESCARGAR AUDIO DEL BUCKET PARA AUDIOS LARGOS
+            try:                
+                # Inicializar cliente de Storage
+                credentials = get_service_account_credentials()
+                if not credentials:
+                    logger.info(f"Error al obtener las credenciales")
+                    return {
+                        "estado": "error",
+                        "size_audio": "large",
+                        "codigo": "006",
+                        "respuesta": operation_data["error"].get("message", "No se pudo obtener las credenciales de Google")                    
+                    }
 
-    # Despues del While True
-    logger.info("✅ Operación completada")
+                storage_client = storage.Client(credentials=credentials)
+                bucket = storage_client.bucket(bucket_name)
+                # Especificar el blob (archivo) dentro del bucket
+                blob = bucket.blob(audio_filename)
+                
+                logger.info(f"Descargando audio largo desde bucket: gs://{bucket_name}/{file.name}{extension}")
 
-    if "error" in operation_data: 
-        # Si la operación terminó, pero terminó con error, devuelvo eso como estado de la respuesta
-        return {
-            "estado": "error",
-            "size_audio":"large",
-            "codigo":"005",
-            "respuesta": operation_data["error"].get("message", "Error desconocido")                    
-        }
+                # Descargar el archivo del bucket
+                blob = bucket.blob(f"{file.name}{extension}")
+                os.makedirs(destino_local, exist_ok=True)
+                
+                # Descargar el archivo
+                blob.download_to_filename(audio_path)
+                logger.info(f"✅ Audio largo descargado: {audio_path}")
+                
+                return {
+                    "status": "success",
+                    "size_audio": "large",
+                    "codigo": "007",
+                    "respuesta": "Audio generado y descargado exitosamente",
+                    "audio_path": audio_path
+                }
+                
+            except Exception as e:
+                logger.error(f"Error descargando audio largo: {e}")
+                return {
+                    "estado": "error",
+                    "size_audio": "large",
+                    "codigo": "008",
+                    "respuesta": f"Error descargando audio: {str(e)}"
+                }
+
+    # AUDIO CORTO
     else:
-        # Descargo el audio generado
-        if response and 'audioContent' in response:
+        if response.status_code != 200:
+            logger.error(f"Error en síntesis corta: {response.text}")
+            return {
+                "estado": "error",
+                "size_audio": "short",
+                "codigo": "009",
+                "respuesta": response.text
+            }
+            
+        response_data = response.json()
+        
+        # Verificar si contiene el audio
+        if 'audioContent' in response_data:
             try:
                 import base64
-                audio_data = base64.b64decode(response['audioContent'])
+                
+                # Decodificar el audio
+                audio_data = base64.b64decode(response_data['audioContent'])
                 os.makedirs(destino_local, exist_ok=True)
 
                 # Guardar archivo de audio
                 with open(audio_path, "wb") as audio_file:
                     audio_file.write(audio_data)
-      
+                
+                logger.info(f"✅ Audio corto guardado: {audio_path}")
+                
                 return {
                     "status": "success",
-                    "size_audio":"large",
-                    "codigo":"006",
-                    "respuesta": response.text
+                    "size_audio": "short",
+                    "codigo": "010",
+                    "respuesta": "Audio generado exitosamente",
+                    "audio_path": audio_path
                 }
+                
             except Exception as e:
-                logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 03 - Error guardando audio corto: {e}")
-                return f"Error guardando audio corto: {e}", 500
+                logger.error(f"Error guardando audio corto: {e}")
+                return {
+                    "estado": "error", 
+                    "size_audio": "short",
+                    "codigo": "011",
+                    "respuesta": f"Error guardando audio corto: {e}"
+                }
         else:
+            logger.error(f"Respuesta no contiene audioContent: {response_data}")
             return {
                 "estado": "error",
-                "size_audio":"short",
-                "codigo":"002",
-                "respuesta": response.text
+                "size_audio": "short",
+                "codigo": "012",
+                "respuesta": "La respuesta no contiene el audio"
             }
 
 def monitorear_operacion_hasta_terminar(gcloud_session, operation_name, access_token, bucket_name, audio_filename):

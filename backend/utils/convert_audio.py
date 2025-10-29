@@ -1,5 +1,9 @@
 from pydub import AudioSegment
 import os
+from dataclasses import dataclass
+import logging
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class OptimizeAudio:
@@ -10,11 +14,9 @@ class OptimizeAudio:
 def optimize_audio(input_wav_path, output_ogg_path=None):
     """
     Optimiza audio para WhatsApp y Telegram
-    
     Args:
         input_wav_path (str): Ruta del archivo WAV
         output_ogg_path (str): Ruta de salida OGG (opcional)
-    
     Returns:
         str: Ruta del archivo optimizado
     """
@@ -27,6 +29,7 @@ def optimize_audio(input_wav_path, output_ogg_path=None):
         # Cargar audio WAV
         audio = AudioSegment.from_wav(input_wav_path)
         
+        logger.info("backend - convert_audio.py - optimize_audio - 01 - Audio WAV cargado correctamente")
         # Aplicar optimizaciones para reducir tamaño
         # 1. Reducir sample rate si es muy alto
         if audio.frame_rate > 22050:
@@ -55,9 +58,9 @@ def optimize_audio(input_wav_path, output_ogg_path=None):
         print(f"📊 Compresión: {compression_ratio:.1f}%")
         
         audio_optimizado = OptimizeAudio(
-            original_size: original_size,
-            compressed_size:compressed_size,
-            compression_ratio: compression_ratio
+            original = original_size,
+            comprimido = compressed_size,
+            ratio_compresion = compression_ratio
         )
 
         return audio_optimizado
@@ -67,5 +70,5 @@ def optimize_audio(input_wav_path, output_ogg_path=None):
         return None
 
 # Ejemplo de uso
-input_file = "shared-files/audio/audio-descargo.wav"
-output_file = optimize_audio_for_messaging(input_file)
+# input_file = "shared-files/audio/audio-descargo.wav"
+# output_file = optimize_audio_for_messaging(input_file)
