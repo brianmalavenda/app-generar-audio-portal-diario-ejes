@@ -387,7 +387,7 @@ def generar_audio():
         return "Filename es requerido", 400
     
     url = f"http://api-proxy:5000/api_proxy/generar_audio?filename={filename}"
-    response = requests.get(url)    
+    response = requests.get(url)
 
     if response.status_code == 200:
         try:
@@ -397,8 +397,6 @@ def generar_audio():
             audio_file_output = filename.split('.')[0] + '.ogg'
             audio_optimizado = optimize_audio(os.path.join(AUDIO_FOLDER,audio_file_input), os.path.join(AUDIO_FOLDER,'optimizado',audio_file_output))
 
-            # if os.path.exists(audio_path):
-            # return jsonify({"status": "OK", "message": f"Audio generado ...\n{audio_optimizado}"}), 200
             return send_from_directory(
                 directory = AUDIO_FOLDER + 'optimizado/',
                 path = audio_file_output, 

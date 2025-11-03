@@ -9,8 +9,9 @@ interface FileStats {
 
 interface AudioState {
   isGenerating: boolean;
-  audioUrl: string | null;
-  audioName: string | null;
+  url: string | null;
+  name: string | null;
+  blob: Blob | null;
   error: string | null;
 }
 
@@ -22,8 +23,9 @@ const App: React.FC = () => {
   const [uploadMessage, setUploadMessage] = useState<string>("");
   const [audioState, setAudioState] = useState<AudioState>({
     isGenerating: false,
-    audioUrl: null,
-    audioName: null,
+    url: null,
+    name: null,
+    blob:null,
     error: null
   });
 
@@ -54,8 +56,9 @@ const App: React.FC = () => {
         // Resetear estado de audio cuando se sube nuevo archivo
         setAudioState({
           isGenerating: false,
-          audioUrl: null,
-          audioName: null,
+          url: null,
+          name: null,
+          blob: null,
           error: null
         });
         return true;
@@ -132,8 +135,9 @@ const App: React.FC = () => {
     try {
       setAudioState({
         isGenerating: true,
-        audioUrl: null,
-        audioName: null,
+        url: null,
+        name: null,
+        blob:null,
         error: null
       });
 
@@ -141,35 +145,24 @@ const App: React.FC = () => {
         `http://localhost:5000/api/generar_audio?filename=procesado_${filename}`,
         {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           mode: 'cors'
         }
       );
 
       if (response.ok) {            
-        const data = await response.json();
-        console.log("Audio generado?" + data);
-
-        if (data.status === "success") {
-          console.log("Audio generado con éxito:", data);
-          // Construir la URL del audio
+          const audioBlob = await response.blob();
+          
+          // Crear una URL local para el blob
+          const audioUrl = URL.createObjectURL(audioBlob);
           const audioName = `procesado_${filename.split('.')[0]}.ogg`;
-          const audioUrl =  `http://localhost:5000${data.directoty}/${data.path}`;
 
           setAudioState({
             isGenerating: false,
-            audioUrl: audioUrl,
-            audioName: audioName,
+            url: audioUrl,
+            name: audioName,
+            blob: audioBlob,
             error: null
           });
-
-          const audio = new Audio(audioUrl);
-          audio.play();
-        } else {
-          throw new Error(data.message || 'Error generando audio');
-        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || `Error ${response.status}`);
@@ -178,8 +171,9 @@ const App: React.FC = () => {
       console.error('Error en la solicitud:', error);
       setAudioState({
         isGenerating: false,
-        audioUrl: null,
-        audioName: null,
+        url: null,
+        name: null,
+        blob: null,
         error: error instanceof Error ? error.message : 'Error desconocido'
       });
     }
@@ -220,88 +214,112 @@ const App: React.FC = () => {
   };
 
   const handleDownloadAudio = useCallback(async () => {
-  if (audioState.audioUrl && audioState.audioName) {
+  if (audioState.url && audioState.name) {
     try {
-      console.log("🎯 Iniciando descarga...");
-      console.log("URL del audio:", audioState.audioUrl);
-      console.log("Nombre del audio:", audioState.audioName);
-
       // Hacer una solicitud para obtener el blob del audio
-      const response = await fetch(audioState.audioUrl);
+      // const response = await fetch(audioState.audioUrl);
       
-      if (!response.ok) {
-        throw new Error(`Error al obtener el audio: ${response.status}`);
-      }
+      // if (!response.ok) {
+      //   throw new Error(`Error al obtener el audio: ${response.status}`);
+      // }
 
-      // Convertir la respuesta a un blob
-      const audioBlob = await response.blob();
+      // // Convertir la respuesta a un blob
+      // const audioBlob = await response.blob();
       
-      // Crear una URL local para el blob
-      const blobUrl = URL.createObjectURL(audioBlob);
+      // // Crear una URL local para el blob
+      // const blobUrl = URL.createObjectURL(audioBlob);
       
       // Crear elemento anchor para descarga
       const a = document.createElement('a');
-      a.href = blobUrl;
+      a.href = audioState.url;
       
       // Usar el nombre del audio desde el estado o extraerlo de la URL
-      const fileName = audioState.audioName.endsWith('.wav') 
-        ? audioState.audioName 
-        : `${audioState.audioName}.wav`;
-      
+      const fileName = audioState.name;
+
       a.download = fileName;
       a.style.display = 'none';
       
       document.body.appendChild(a);
       a.click();
       
-      // Limpiar
       document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-      
       console.log("✅ Descarga iniciada correctamente");
       
     } catch (error) {
       console.error('❌ Error descargando audio:', error);
       
       // Fallback: abrir en nueva pestaña
-      window.open(audioState.audioUrl, '_blank');
+      window.open(audioState.url, '_blank');
     }
   }
-}, [audioState.audioUrl, audioState.audioName]);
+}, [audioState.url, audioState.name]);
 
   // Función para compartir en Telegram
-  const handleShareTelegram = useCallback(() => {
-    if (!audioState.audioUrl) {
+  const handleShareTelegram = useCallback(async() => {
+    if (!audioState.url) {
       alert('Primero debe generar el audio');
       return;
     }
 
-    const text = `¡Escucha este audio generado! ${audioState.audioUrl}`;
-    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(audioState.audioUrl)}&text=${encodeURIComponent(text)}`;
-    window.open(telegramUrl, '_blank', 'width=600,height=400');
-  }, [audioState.audioUrl]);
+    const botToken = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN || '';
+    const chatId = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID || '';
+
+    if (!botToken || !chatId) {
+      console.error('Faltan variables de entorno para Telegram');
+      alert('Error de configuración: Faltan credenciales de Telegram');
+      return;
+    }
+    console.info('Compartiendo audio en Telegram...');
+    console.info(audioState.name);
+    console.info('Telegram Bot Token' + botToken);
+    console.info('Telegram Chat' + chatId);
+
+    const formData = new FormData();
+    formData.append('chat_id', chatId);
+    formData.append('audio', audioState.blob, audioState.name); 
+    formData.append('performer', 'Tu App');
+    formData.append('title', audioState.name.split('.')[0]);
+
+    const options = {
+      method: 'POST',
+      body: formData
+    };
+
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendAudio`, options);
+    response.json().then(data => {
+      if (data.ok) {
+        console.log('Audio compartido en Telegram correctamente');
+      } else {
+        console.error('Error compartiendo audio en Telegram:', data);
+      }
+    }).catch(error => {
+      console.error('Error procesando respuesta de Telegram:', error);
+    });
+        
+    // window.open(telegramUrl, '_blank', 'width=600,height=400');
+  }, [audioState.url, audioState.name, audioState.blob]);
 
   // Función para compartir en WhatsApp
   const handleShareWhatsApp = useCallback(() => {
-    if (!audioState.audioUrl) {
+    if (!audioState.url) {
       alert('Primero debe generar el audio');
       return;
     }
 
-    const text = `¡Escucha este audio generado! ${audioState.audioUrl}`;
+    const text = `¡Escucha este audio generado! ${audioState.url}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(whatsappUrl, '_blank', 'width=600,height=400');
-  }, [audioState.audioUrl]);
+  }, [audioState.url]);
 
   const AudioPlayer = () => {
-    if (!audioState.audioUrl) return null;
+    if (!audioState.url) return null;
 
     return (
       <div className="mt-6 p-4 bg-white rounded-lg shadow-sm border">
         <h3 className="text-lg font-semibold text-gray-800 mb-3">Audio Generado</h3>
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <audio controls className="flex-1">
-            <source src={audioState.audioUrl} type="audio/ogg" />
+            <source src={audioState.url} type="audio/ogg" />
             Tu navegador no soporta el elemento de audio.
           </audio>
           <button
@@ -320,7 +338,7 @@ const App: React.FC = () => {
 
   // Componente para los botones de compartir flotantes
   const ShareButtons = () => {
-    if (!audioState.audioUrl) return null;
+    if (!audioState.url) return null;
 
     return (
       <div className="fixed bottom-6 right-6 flex flex-col gap-4 z-50">
@@ -330,7 +348,7 @@ const App: React.FC = () => {
           className="w-14 h-14 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 transform hover:scale-110"
           title="Compartir en WhatsApp"
         >
-          <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893-.001-3.189-1.262-6.209-3.553-8.485"/>
           </svg>
         </button>
@@ -341,7 +359,7 @@ const App: React.FC = () => {
           className="w-14 h-14 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 transform hover:scale-110"
           title="Compartir en Telegram"
         >
-          <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="w-12 h-12 text-white" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.157l-1.895 8.849c-.127.585-.465.73-.94.456l-2.609-1.92-1.258 1.212c-.139.135-.255.248-.511.248l.183-2.607 4.826-4.36c.205-.185-.045-.288-.318-.104l-5.961 3.752-2.57-.801c-.561-.174-.573-.561.117-.833l10.018-3.858c.467-.173.876.112.717.83z"/>
           </svg>
         </button>
@@ -441,7 +459,7 @@ const App: React.FC = () => {
 
               {/* Botones de acción */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-                {!audioState.audioUrl ? (
+                {!audioState.url ? (
                   <button
                     onClick={() => handleExportToAudio(file.name)}
                     disabled={isUploading || audioState.isGenerating}
@@ -482,8 +500,9 @@ const App: React.FC = () => {
                   setUploadMessage("");
                   setAudioState({
                     isGenerating: false,
-                    audioUrl: null,
-                    audioName: null,
+                    url: null,
+                    name: null,
+                    blob: null,
                     error: null
                   });
                 }}
