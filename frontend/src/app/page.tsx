@@ -1,4 +1,5 @@
 "use client";
+import { stringify } from "querystring";
 import React, { useState, useCallback } from "react";
 
 interface FileStats {
@@ -261,42 +262,29 @@ const App: React.FC = () => {
       return;
     }
 
-    const botToken = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN || '';
-    const chatId = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID || '';
+    try {
+          // Crear FormData en lugar de JSON
+          const formData = new FormData();
+          formData.append('name', audioState.name);
+          formData.append('audio_file', audioState.blob, audioState.name); // Archivo real
 
-    if (!botToken || !chatId) {
-      console.error('Faltan variables de entorno para Telegram');
-      alert('Error de configuración: Faltan credenciales de Telegram');
-      return;
-    }
-    console.info('Compartiendo audio en Telegram...');
-    console.info(audioState.name);
-    console.info('Telegram Bot Token' + botToken);
-    console.info('Telegram Chat' + chatId);
+          const response = await fetch('http://localhost:5000/api/compartir_telegram', {
+            method: 'POST',
+            body: formData // No establecer Content-Type, el navegador lo hará automáticamente
+          });
 
-    const formData = new FormData();
-    formData.append('chat_id', chatId);
-    formData.append('audio', audioState.blob, audioState.name); 
-    formData.append('performer', 'Tu App');
-    formData.append('title', audioState.name.split('.')[0]);
+          const respuesta = await response.json();
+          console.log('Respuesta del backend:', respuesta);
 
-    const options = {
-      method: 'POST',
-      body: formData
-    };
-
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendAudio`, options);
-    response.json().then(data => {
-      if (data.ok) {
-        console.log('Audio compartido en Telegram correctamente');
-      } else {
-        console.error('Error compartiendo audio en Telegram:', data);
-      }
-    }).catch(error => {
-      console.error('Error procesando respuesta de Telegram:', error);
-    });
-        
-    // window.open(telegramUrl, '_blank', 'width=600,height=400');
+          if (respuesta.status === "OK") {
+            alert('Audio compartido en Telegram exitosamente');
+          } else {
+            alert(`Error: ${respuesta.message}`);
+          }
+        } catch(error) {
+          console.error('Error compartiendo en Telegram:', error);
+          alert('Error compartiendo en Telegram');
+        }
   }, [audioState.url, audioState.name, audioState.blob]);
 
   // Función para compartir en WhatsApp

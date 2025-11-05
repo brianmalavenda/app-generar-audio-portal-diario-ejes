@@ -38,6 +38,7 @@ app = Flask(__name__)
 AUDIO_FOLDER = os.getenv('AUDIO_FOLDER', '/app/shared-files/audio/')
 # os.path.join(os.getcwd(), "/app/shared-files", "audio")
 SAVE_FOLDER = os.getenv('SAVE_FOLDER', '/app/shared-files/diario_pintado/')
+PROCESADOS = os.getenv('PROCESADOS', '/app/shared-files/diario_procesado/')
 # Configura CORS para permitir solicitudes desde localhost:3000
 
 ALLOWED_ORIGINS = ['http://localhost:3000']  # Agrega tu dominio de producción
@@ -410,6 +411,75 @@ def generar_audio():
     else:
         logger.info(f"main.py - generar_audio - 04 - Error llamando a api-proxy: {response.status_code}")
         return jsonify({"status": "ERROR", "message": "Error llamando a api-proxy"}), 500
+
+@app.route('/api/compartir_telegram', methods=['POST'])
+@cross_origin(origins=['http://localhost:3000', 'http://127.0.0.1:3000'])
+def compartir_a_telegram():
+    try:
+        TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+        TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+
+        if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+            return jsonify({"status": "ERROR", "message": "Telegram bot token or chat ID not configured"}), 500
+
+        # Obtener el archivo de audio del FormData
+        if 'audio_file' not in request.files:
+            return jsonify({"status": "ERROR", "message": "No audio file provided"}), 400
+        
+        audio_file = request.files['audio_file']
+        audio_name = request.form.get('name', 'audio.ogg')
+
+        if audio_file.filename == '':
+            return jsonify({"status": "ERROR", "message": "No file selected"}), 400
+
+        logger.info(f"main.py - compartir_a_telegram - 01 - Compartiendo audio: {audio_name}")
+        logger.info(f"main.py - compartir_a_telegram - 02 - Tipo de archivo: {audio_file.content_type}")
+
+        telegram_api_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendAudio"
+        # Preparar los datos para Telegram
+        files = {
+            'audio': (audio_name, audio_file.stream, 'audio/ogg')
+        }
+
+        data = {
+            'chat_id': TELEGRAM_CHAT_ID,
+            'caption': 'Audio generado desde la aplicación',
+            'title': audio_name.split('.')[0]  # Nombre sin extensión
+        }
+
+        # Enviar a Telegram
+        response = requests.post(telegram_api_url, files=files, data=data)
+
+        word_filename = audio_name.split('.')[0] + '.docx'
+        file_path = os.path.join(PROCESADOS, word_filename)
+        
+        with open(file_path, 'rb') as word_file:
+            # Preparar los archivos para Telegram - SOLO puedes enviar un archivo por mensaje
+            telegram_doc_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendDocument"
+            
+            files_doc = {
+                'document': (word_filename, word_file, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            }
+            
+            data_doc = {
+                'chat_id': TELEGRAM_CHAT_ID,
+                'caption': 'Documento generado desde la aplicación',
+                'title': audio_name.split('.')[0]  # Nombre sin extensión
+            }
+
+            response_doc = requests.post(telegram_doc_url, files=files_doc, data=data_doc)
+
+        if response.status_code == 200:
+            logger.info("main.py - compartir_a_telegram - Compartido a Telegram")
+            return jsonify({"status": "OK", "message": "Audio compartido en Telegram"}), 200
+        else:
+            error_msg = f"Error de Telegram: {response.status_code} - {response.text}"
+            logger.error(f"main.py - compartir_a_telegram - {error_msg}")
+            return jsonify({"status": "ERROR", "message": error_msg}), 500
+
+    except Exception as e:
+        logger.error(f"main.py - compartir_a_telegram - Error compartiendo audio en Telegram: {str(e)}")
+        return jsonify({"status": "ERROR", "message": f"Error compartiendo audio en Telegram: {str(e)}"}), 500
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
