@@ -6,9 +6,11 @@ services:
     container_name: frontend-container
     ports:
       - "3000:3000"
+    volumes:
+      - ./shared:/app/shared-files
     networks:
       - tts-network
-
+      
   backend:
     image: backend
     container_name: backend-container
@@ -24,10 +26,15 @@ services:
     container_name: api-proxy-container
     ports:
       - "5001:5000"
+    # volumes:
+    #   - ./shared:/app/shared-files
     volumes:
       - ./shared:/app/shared-files
+      - ./api-proxy/credentials/google-credentials.json:/app/google-key.json  # Montas el archivo directamente
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/google-key.json # Le dices dónde está
     networks:
-      - tts-network
+      - tts-network      
     # secrets:
     #   - google_credentials
     # environment:
@@ -37,8 +44,7 @@ services:
 
 networks:
   tts-network:
-    driver: bridge  # Cambiar a overlay para Swarm
-
+    driver: bridge
 # secrets:
 #   google_credentials:
 #     external: true

@@ -3,7 +3,7 @@ from docx import Document
 from docx.enum.text import WD_COLOR_INDEX
 import os
 import xml.dom.minidom
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 import requests
 from flask_cors import CORS, cross_origin  # Importa la extensión CORS
 import os
@@ -42,9 +42,27 @@ CORS(app, origins=ALLOWED_ORIGINS)
 #     }
 # })
 
+
 class Heading1NotFoundException(Exception):
     """Excepción personalizada para cuando no se encuentra un Heading 1"""
     pass
+
+@app.route('/audio/<filename>')
+def serve_audio(filename):
+    try:
+        audio_dir = "/app/shared-files/audio"
+        # Verificar si el archivo existe
+        if not os.path.exists(os.path.join(audio_dir, filename)):
+            return {"error": "Archivo no encontrado"}, 404
+        
+        return send_from_directory(
+            audio_dir, 
+            filename,
+            as_attachment=False,  # Para reproducir en el navegador
+            mimetype='audio/wav'
+        )
+    except Exception as e:
+        return {"error": str(e)}, 500
 
 @app.route('/api/healthcheck', methods=['GET'])
 @cross_origin(origins=['http://localhost:3000', 'http://127.0.0.1:3000'])
@@ -374,6 +392,7 @@ def convertir_a_formato_ssml(input_path,output_path):
 # @secure_endpoint # Este endpoint solo puede ser llamado desde el frontend
 @cross_origin(origins=['http://localhost:3000', 'http://127.0.0.1:3000'])
 def generar_audio():
+    logger.info(f"main.py - generar_audio - 00 - en la api")
     filename = request.args.get('filename')
     if not filename:
         return "Filename es requerido", 400
@@ -396,7 +415,11 @@ def generar_audio():
             logger.info(f"main.py - generar_audio - 02 - Path del audio: {audio_path}")
 
             # if os.path.exists(audio_path):
-            return jsonify({"status": "OK", "message": "Archivo de audio generado", "public_audio_url": result[0]['public_audio_url']}), 200
+            # debo descargar el audio y tenerlo localmente para reenviarlo al cliente
+            return jsonify({"status": "OK", "message": "Archivo de audio generado", "public_audio_url": audio_path}), 200
+
+            # esta es la versión donde no descargaba el audio sino que solo devolvía la url pública
+            # return jsonify({"status": "OK", "message": "Archivo de audio generado", "public_audio_url": result[0]['public_audio_url']}), 200
             # else:
             #     print("El archivo de audio no fue encontrado después de la generación.")
             #     return jsonify({"status": "ERROR", "message": "Archivo de audio no se guardo"}), 500

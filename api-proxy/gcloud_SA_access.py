@@ -258,17 +258,18 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
             else:
                 # en audio_path mando toda la ruta incluido el nombre del archivo
                 time.sleep(10)
-                public_url = make_audio_public(bucket_name, f"{audio_filename}")
+                # tengo que descargar el audio desde GCS porque necesito tener el archivo en el servidor para reenviarlo a telegram
+                # public_url = make_audio_public(bucket_name, f"{audio_filename}")
                 descargar_audio_gs(gcloud, bucket_name, f"{file.name}{extension}", audio_path)
                 logger.info(f"api-proxy - gcloud_SA_access.py - synthesize_speech - 05 - {operation_data} -----------")
-                public_signed_url = generate_signed_url(bucket_name, f"{file.name}{extension}", expiration_hours=24)
+                # public_signed_url = generate_signed_url(bucket_name, f"{file.name}{extension}", expiration_hours=24)
                 
                 return {
                     "status": "success",
                     "size_audio":"large",
                     "codigo":"006",
-                    "respuesta": response.text,
-                    "public_url": public_signed_url
+                    "respuesta": response.text
+                    # "public_url": public_signed_url
                 }
 
         
