@@ -137,4 +137,139 @@ Notas:
    3. front
 5. Una vez que queda separada la api-gateway del back y del front, considero esta parte como otra app. Esto implica que tiene su propias variables de entorno, dependencias, file system, etc. Esto se traducirá en un contenedor docker que simulará otro servidor. Para eso primero creamos un dockerfile para crear la imagen de la app. Luego con un archivo docker-compose.yml podemos orquestar los contenedores y dejarlo listo para que al levantarlo podamos desde afuera acceder a la API desde http://localhost:8000
 
-### hicimos
+
+## GOOGLE CLOUD BUCKET
+
+https://console.cloud.google.com/storage/browser/audios-text-to-speech-01;tab=permissions?forceOnBucketsSortingFiltering=true&hl=es-419&project=rugged-feat-471218-r8&prefix=&forceOnObjectsSortingFiltering=false
+
+Hicimos de acceso público el bucket ya que contiene solo los audios sintetizados y la metadata. Tendríamos que evaluar si hay riesgos de seguridad haciendo esto.
+
+Esta arquitectura
+Google Cloud Storage (Bucket) → URL Pública/Signed URL → Frontend (Descarga directa)
+
+quizas lo más seguro sea generar una URL temporal firmada (Signed URLs) para descargar los audios. Esto deberíamos probar si sirve para descargar los audios y para poder utilizarlos como fuente de lectura al momento de querer reproducirlos desde el navegador
+
+def generate_signed_url(bucket_name, audio_filename, expiration_hours=24):
+    """Genera una URL temporal firmada"""
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(f"audios/{audio_filename}")
+    
+    # Verificar que existe
+    if not blob.exists():
+        return None
+    
+    # Generar URL firmada por 24 horas
+    signed_url = blob.generate_signed_url(
+        expiration=datetime.timedelta(hours=expiration_hours),
+        method="GET"
+    )
+    
+    return signed_url
+
+# Uso
+signed_url = generate_signed_url("audios-text-to-speech-01", audio_filename)
+
+# Acceso publico y configuracion de CORS
+
+Es necesario aplicar esta configuración porque desde el navegador Google Cloud no te deja descargar directamente el audio por políticas de CORS.
+
+gsutil cors set google_cors.json gs://audios-text-to-speech-01 
+gsutil cors get gs://audios-text-to-speech-01 
+
+
+
+## EJECUTAR CONTENEDORES
+
+sudo docker build -t api-proxy .
+sudo docker build -t backend-python-images .
+sudo docker build -t frontend-images .
+
+<!-- creamos la red bridge para comunicarse entre contenedores -->
+docker network create tts-network
+
+docker run -it -p 5001:5000 -v $(pwd)/shared:/app/shared-files --name api-proxy-container api-proxy:latest
+
+docker run -it -p 5001:5000 --name api-proxy-container api-proxy:latest
+
+docker run -it -p 5000:5000 -v $(pwd)/shared:/app/shared-files --name backend-container  --network tts-network backend:latest
+docker run -it -p 3000:3000 --name frontend-container frontend:latest
+
+<!-- entrar dentro de mi contenedor -->
+docker exec -it backend-container-api /bin/bash
+<!-- buscar un archivo -->
+docker exec nombre_de_tu_contenedor find / -name "*.txt" 2>/dev/null
+
+docker volumen ls
+
+
+docker stop $(docker ps -aq) && docker rm $(docker ps -aq) && docker rmi $(docker images -q) 
+&& rmdir shared
+
+docker build -t frontend:latest ./frontend
+docker build -t backend:latest ./backend
+docker build -t api-proxy:latest ./api-proxy
+
+# En tu servidor, en la carpeta del proyecto
+### deploy.sh
+
+docker swarm init
+docker secret create google_credentials cred/google-credentials.json
+docker stack deploy -c docker-compose.yml tu-app
+
+# En tu servidor, una sola vez:
+cd ~/Repositorio/app-generar-audio-portal-diario-ejes
+docker swarm init
+docker secret create google_credentials api/cred/google-credentials.json
+docker stack deploy -c docker-compose.yml audio-app
+
+
+# Generar audio largo
+
+curl -X POST -F "file=@procesado_test_03_corto.docx" http://127.0.0.1:5001/api_proxy/sintetizar_audio --output prueba_01_corto.ogg
+
+# Generar audio corto
+
+curl -X POST -F "file=@procesado_test_03_largo.docx" http://127.0.0.1:5001/api_proxy/sintetizar_audio --output prueba_01_largo.ogg
+
+https://console.cloud.google.com/storage/browser/audios-text-to-speech-01;tab=objects?project=rugged-feat-471218-r8&prefix=&forceOnObjectsSortingFiltering=false
+
+# LOGS de los contenedores activos
+docker-compose logs -f
+
+docker logs -f backend-container
+
+# DESCARGAR AUDIO
+
+Es necesario que guardemos en el servidor el audio ya que para compartirlo por telegram o luego por whatsapp debemos compartirlo desde el servidor.
+
+### Bot de telegram
+Done! Congratulations on your new bot. You will find it at t.me/PortalDiariosBot. You can now add a description, about section and profile picture for your bot, see /help for a list of commands. By the way, when you've finished creating your cool bot, ping our Bot Support if you want a better username for it. Just make sure the bot is fully operational before you do this.
+
+Use this token to access the HTTP API:
+8446173738:AAE6wfhkh3oEx0YheU99VolGF3kY10prZTg
+Keep your token secure and store it safely, it can be used by anyone to control your bot.
+
+For a description of the Bot API, see this page: https://core.telegram.org/bots/api
+
+
+npm install node-telegram-bot-api
+npm install -D @types/node-telegram-bot-api
+
+
+Aquí está la secuencia que funcionó para mí después de luchar durante varias horas:
+
+Supongamos que el nombre del bot es mi_bot.
+
+1- Agrega el bot al grupo.
+Vaya al grupo, haga clic en el nombre del grupo, haga clic en Agregar miembros, en el cuadro de búsqueda busque su bot de esta manera: @my_bot, seleccione su bot y haga clic en agregar.
+
+2- Envía un mensaje ficticio al bot.
+Puedes utilizar este ejemplo: /my_id @my_bot
+(Probé algunos mensajes, no todos funcionan. El ejemplo anterior funciona bien. Quizás el mensaje debería comenzar con /)
+
+3- Vaya a la siguiente URL: https://api.telegram.org/botXXX:YYYY/getUpdates
+Reemplaza XXX:YYYY con tu token de bot
+
+4- Busque "chat":{"id":-zzzzzzzzzz,
+-zzzzzzzzzz es tu ID de chat (con el signo negativo).
