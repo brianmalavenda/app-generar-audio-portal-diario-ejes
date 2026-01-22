@@ -31,9 +31,15 @@ AUDIO_FOLDER = os.getenv('AUDIO_FOLDER', '/app/shared-files/audio/')
 # os.path.join(os.getcwd(), "/app/shared-files", "audio")
 SAVE_FOLDER = os.getenv('SAVE_FOLDER', '/app/shared-files/diario_pintado/')
 # Configura CORS para permitir solicitudes desde localhost:3000
-
 ALLOWED_ORIGINS = ['http://localhost:3000']  # Agrega tu dominio de producción
 CORS(app, origins=ALLOWED_ORIGINS)
+
+# CORS(app, 
+#      origins=ALLOWED_ORIGINS,
+#      supports_credentials=True,
+#      allow_headers=['Content-Type', 'Authorization', 'Accept'],
+#      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+
 # CORS(app, resources={
 #     r"/api/*": {
 #         "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
