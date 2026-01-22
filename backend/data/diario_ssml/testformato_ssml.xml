@@ -1,0 +1,111 @@
+<?xml version="1.0" ?>
+<speak>
+    <voice name="es-US-Standard-B" gender="MALE">
+        <prosody rate="medium" volume="loud">
+            <emphasis level="strong">250910 RT 01 Trump anuncia la muerte del activista Charlie Kirk, tiroteado en acto público</emphasis>
+        </prosody>
+    </voice>
+    
+
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">El activista conservador fue disparado en el cuello por un individuo.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">Trump anuncia la muerte del activista Charlie Kirk, tiroteado en acto público</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">El activista político estadounidense Charlie Kirk ha muerto tras ser tiroteado este miércoles durante una sesión de preguntas y respuestas con estudiantes en la Universidad del Valle de Utah. El presidente Donald Trump ha confirmado su deceso en su cuenta de Truth Social.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">&quot;El gran, e incluso legendario, Charlie Kirk, ha muerto. Nadie entendía ni tenía el corazón de la juventud de Estados Unidos mejor que Charlie. Era querido y admirado por todos, especialmente por mí, y ahora ya no está con nosotros&quot;, escribió el mandatario estadounidense.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">&quot;Melania y yo transmitimos nuestro pésame a su hermosa esposa Erika y a su familia. ¡Charlie, te queremos!&quot;, concluyó el mensaje.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">Trump también ordenó que todas las banderas nacionales ondeen a media asta en todo el país hasta las 18:00 de la tarde del domingo en honor a Kirk, a quien llamó &quot;un verdadero gran patriota estadounidense&quot;.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">En un principio se reportó que el sospechoso fue detenido, pero luego la Policía determinó que no fue el atacante</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">Justamente antes de la agresión, Kirk estaba respondiendo preguntas de la audiencia sobre tiroteos masivos y violencia armada. &quot;¿Sabe usted cuántos estadounidenses transgénero han sido tiradores masivos en los últimos 10 años?&quot;, le preguntaron desde la multitud. &quot;Demasiados&quot;, contestó Kirk.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">&quot;¿Sabe usted cuántos tiradores masivos ha habido en EE.UU. en los últimos 10 años?&quot;, fue la siguiente pregunta. &quot;¿Contando o sin contar con la violencia de pandillas?&quot;, contestó Kirk. Luego se escuchó el disparo mortal.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">El evento había provocado controversia en el campus ya en la etapa de su organización. Una petición en línea instó a los administradores de la universidad que prohibieran la aparición de Kirk, y terminó recibiendo casi 1.000 firmas. La semana pasada, el centro educativo emitió un comunicado citando los derechos de la Primera Enmienda de la Constitución y reafirmó su &quot;compromiso con la libertad de expresión, la investigación intelectual y el diálogo constructivo&quot;.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">Días atrás, Kirk publicó en X imágenes de noticias que mostraban que su visita a las universidades de Utah estaba generando controversia. </prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">&quot;¿Qué está pasando en Utah?&quot;, </prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">preguntó en aquella publicació</prosody>
+    </voice>
+    <voice name="es-US-Standard-B" gender="MALE">
+        <prosody rate="medium" volume="loud">
+            <emphasis level="strong">250910 RT 02 La UE rechazó propuesta de Trump de imponer aranceles elevados a China e India</emphasis>
+        </prosody>
+    </voice>
+    
+
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">Según el periódico, es improbable que el bloque implemente nuevas restricciones a la compra de petróleo o gas por razones políticas internas.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">La UE rechazó propuesta de Trump de imponer aranceles elevados a China e India</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">La Unión Europea ha rechazado la propuesta del presidente estadounidense, Donald Trump, de imponer aranceles elevados a China e India, informó el miércoles The Wall Street Journal citando a funcionarios familiarizados con el asunto.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">El diario señaló que representantes del bloque europeo afirmaron que sus países miembros no utilizan los aranceles como herramienta de sanción.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">EE.UU. quiere que la UE también sancione a los países que compran petróleo ruso</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">EE.UU. quiere que la UE también sancione a los países que compran petróleo ruso</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">Además, indicó que es improbable que la UE implemente nuevas restricciones a las compras de petróleo o gas, debido a &quot;las sensibilidades políticas&quot; existentes entre sus Estados miembros.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">Previamente, Financial Times informó que Trump instó a los países europeos a imponer aranceles de hasta un 100 % a China y la India como parte de un esfuerzo conjunto para presionar a Rusia a poner fin al conflicto con Ucrania.</prosody>
+    </voice>
+    <voice name="es-US-Standard-B" gender="MALE">
+        <prosody rate="medium" volume="loud">
+            <emphasis level="strong">250910RT03El secretario de Guerra de EE.UU. lanza un mensaje a China</emphasis>
+        </prosody>
+    </voice>
+    
+
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">El secretario del Departamento de Guerra de EE.UU., Pete Hegseth, mantuvo este martes una conversación telefónica con el ministro de Defensa de China, el almirante Dong Jun, durante la que le trasladó el mensaje de que Washington no busca entrar en conflicto con Pekín, según ha comunicado este miércoles el Pentágono.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">&quot;El secretario Hegseth dejó claro que EE.UU. no busca</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">el conflicto con China ni persigue un cambio de régimen o el estrangulamiento de la República Popular China. Sin embargo, al mismo tiempo, transmitió con franqueza que EE.UU. tiene intereses vitales en la región Asia-Pacífico, el teatro de operaciones prioritario, y que protegerá resueltamente esos intereses. En general, el secretario y el ministro intercambiaron opiniones de forma sincera y constructiva. Acordaron continuar las conversaciones&quot;, reza el mensaje de la institución.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">Lo más destacado del histórico desfile militar en China </prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">Por su parte, Dong instó a su par estadounidense a fomentar lazos militares estables y positivos basados en el &quot;respeto igualitario, la coexistencia pacífica y el respeto mutuo&quot;, recoge Xinhua.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">llamada telefónica tiene lugar una semana después del gran desfile militar en Pekín, donde China presentó su tríada nuclear, un misil capaz de alcanzar cualquier punto del planeta, así como tres nuevas ramas militares. Al evento conmemorativo por el 80.º aniversario del final de la Segunda Guerra Mundial y de la Guerra de Resistencia del Pueblo Chino contra la Agresión </prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">Japonesa, asistieron 26 líderes extranjeros, incluido los de Rusia y la República Popular Democrática de Corea (RPDC), Vladímir Putin y Kim Jong-un, respectivamente. El presidente estadounidense, Donald Trump, reaccionó acusando a los mandatarios de los tres países de &quot;conspirar&quot; contra Washington.</prosody>
+    </voice>
+    <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">La semana pasada, el Departamento de Defensa de EE.UU. pasó a denominarse Departamento de Guerra por iniciativa de Trump. Según dijo Hegseth, el cambio denota que sus funciones podrán reflejar tareas más ofensivas que defensivas.</prosody>
+    </voice>
+</speak>
