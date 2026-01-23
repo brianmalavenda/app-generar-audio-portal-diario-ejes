@@ -158,7 +158,7 @@ const App: React.FC = () => {
           const audioName = `procesado_${filename.split('.').slice(0, -1).join('.')}`;
           // generar un enlace al recurso que se encuentra en el backend en la carpeta app/shared-files/audio
           // sirvo el audio directamente desde el backend
-          const audioUrl = `http://localhost:5000/audio/${audioName}.wav`;
+          const audioUrl = `http://localhost:5000/audio/${audioName}.mp3`;
           // const audioUrl = data.public_audio_url;
           console.log(audioUrl)
 

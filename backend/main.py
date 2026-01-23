@@ -456,15 +456,15 @@ def generar_audio():
                     """)
                     
                     # Eliminar WAV original si se solicita
-                    if delete_original and os.path.exists(audio_path):
+                    if os.path.exists(audio_path):
                         os.remove(audio_path)
                         print(f"🗑️  Eliminado WAV original")
         
                 except Exception as error_convert:
-                    logger.info(f"⚠️  error al convertir el archivo WAV en MP3: {error_convert}")
+                    logger.info(f"❌ Error en la conversión WAV a MP3: {error_convert}")
                     
             #     except Exception as e:
-            #         print(f"❌ Error en conversión: {e}")
+            #         print(f"Error en conversión: {e}")
             #         return False
                 
             #         if success:
