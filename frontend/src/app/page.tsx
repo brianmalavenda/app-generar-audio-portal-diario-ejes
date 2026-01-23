@@ -326,29 +326,30 @@ const App: React.FC = () => {
     // window.open(telegramUrl, '_blank', 'width=600,height=400');
   // }, [audioState.audioUrl]);
 
-  const shareDocumentToTelegram = useCallback( async () => {
-    const __filename = "procesado_test_04.docx";
+  const shareToTelegram = async (files: {document?: string, audio?: string}) => {
+    
+    console.log("documento: " + files.document + "audio: " + files.audio);
     try {
-      const response = await fetch('http://localhost:3000/telegram/share-files', {
+      // apunto al backend
+      const response = await fetch('http://localhost:5000/api/telegram/share', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          'chatId': '-828250861',
-          'fileName': __filename
+          chatId: '-1001805776638',
+          fileName: 'test-13.docx',
+          audioFileName: files.audio
         }),
       });
 
       const result = await response.json();
-
+      
       if (result.success) {
-        console.log('✅ Documento compartido exitosamente');
-        alert('Documento enviado a Telegram correctamente');
+        console.log('✅ Envío exitoso:', result.results);
+        alert('Archivos enviados a Telegram');
         return true;
       } else {
-        console.error('❌ Error:', result.message);
-        alert(`Error: ${result.message}`);
+        console.error('❌ Error:', result);
+        alert(`Error: ${result.error || 'Ver consola'}`);
         return false;
       }
     } catch (error) {
@@ -356,7 +357,47 @@ const App: React.FC = () => {
       alert('Error de conexión con el servidor');
       return false;
     }
-  },[audioState.audioName]);
+  };
+
+  const shareDocumentToTelegram = () => {
+    console.log("Archivo a enviar por telegram:  procesado_" + file.name)
+    shareToTelegram({ 
+      document: file.name,
+      audio: audioState.audioName 
+    });
+  };
+
+  // const shareDocumentToTelegram = useCallback( async () => {
+  //   const __filename = "procesado_test_4.docx";
+  //   try {
+  //     const response = await fetch('http://localhost:3000/telegram/share-files', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         'chatId': '-828250861',
+  //         'fileName': __filename
+  //       }),
+  //     });
+
+  //     const result = await response.json();
+
+  //     if (result.success) {
+  //       console.log('✅ Documento compartido exitosamente');
+  //       alert('Documento enviado a Telegram correctamente');
+  //       return true;
+  //     } else {
+  //       console.error('❌ Error:', result.message);
+  //       alert(`Error: ${result.message}`);
+  //       return false;
+  //     }
+  //   } catch (error) {
+  //     console.error('❌ Error de conexión:', error);
+  //     alert('Error de conexión con el servidor');
+  //     return false;
+  //   }
+  // },[audioState.audioName]);
 
   // Función para compartir en WhatsApp
   const handleShareWhatsApp = useCallback(() => {
