@@ -13,6 +13,7 @@ import datetime
 import logging
 import sys
 from pydub import AudioSegment
+from api.telegram_services import telegram_bp
 
 # Configurar logging para que vaya a stdout (se captura con docker logs)
 logging.basicConfig(
@@ -23,7 +24,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# load_dotenv()
+load_dotenv()
 # ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
 
 app = Flask(__name__)
@@ -35,6 +36,8 @@ SAVE_FOLDER = os.getenv('SAVE_FOLDER', '/app/shared-files/diario_pintado/')
 
 ALLOWED_ORIGINS = ['http://localhost:3000']  # Agrega tu dominio de producción
 CORS(app, origins=ALLOWED_ORIGINS)
+
+app.register_blueprint(telegram_bp)
 
 # CORS(app, 
 #      origins=ALLOWED_ORIGINS,

@@ -273,3 +273,7 @@ Reemplaza XXX:YYYY con tu token de bot
 
 4- Busque "chat":{"id":-zzzzzzzzzz,
 -zzzzzzzzzz es tu ID de chat (con el signo negativo).
+
+### Integración
+
+Frontend → API Gateway (nginx) → { Backend, Telegram-Service }
