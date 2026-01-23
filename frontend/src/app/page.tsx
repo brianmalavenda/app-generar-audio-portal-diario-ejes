@@ -257,8 +257,8 @@ const App: React.FC = () => {
         a.href = blobUrl;
         
         const audioName = audioState.audioName
-          ? `${audioState.audioName.replace(/\.[^/.]+$/, "")}.wav`
-          : 'audio_generado.wav';
+          ? `${audioState.audioName.replace(/\.[^/.]+$/, "")}.mp3`
+          : 'audio_generado.mp3';
         
         a.download = audioName;
         a.style.display = 'none';
@@ -287,7 +287,7 @@ const App: React.FC = () => {
         <h3 className="text-lg font-semibold text-gray-800 mb-3">Audio Generado</h3>
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <audio controls className="flex-1">
-            <source src={audioState.audioUrl} type="audio/wav" />
+            <source src={audioState.audioUrl} type="audio/mp3" />
             Tu navegador no soporta el elemento de audio.
           </audio>
           
