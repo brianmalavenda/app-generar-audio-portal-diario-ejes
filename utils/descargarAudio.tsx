@@ -30,7 +30,7 @@ const handleDownloadAudio = useCallback(async (audioUrl: string, audioName: stri
     // Crear enlace temporal para descarga
     const link = document.createElement('a');
     link.href = audioUrl;
-    link.download = `${audioName}.wav`;
+    link.download = `${audioName}.mp3`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

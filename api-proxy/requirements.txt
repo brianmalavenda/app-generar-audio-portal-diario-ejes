@@ -24,3 +24,4 @@ requests==2.31.0
 cryptography==46.0.1
 pyjwt==2.8.0
 bcrypt==4.1.2
+pydub==0.25.1

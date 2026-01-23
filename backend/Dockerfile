@@ -1,6 +1,16 @@
 # Dockerfile
 FROM python:3.11-slim
 
+# 1. Instalar FFmpeg y dependencias del sistema
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*  # Limpiar caché para reducir tamaño
+
+    
+# 2. Verificar instalación
+RUN ffmpeg -version | head -1
+
 # Directorio de trabajo
 WORKDIR /app
 
