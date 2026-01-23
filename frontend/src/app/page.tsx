@@ -158,7 +158,7 @@ const App: React.FC = () => {
           const audioName = `procesado_${filename.split('.').slice(0, -1).join('.')}`;
           // generar un enlace al recurso que se encuentra en el backend en la carpeta app/shared-files/audio
           // sirvo el audio directamente desde el backend
-          const audioUrl = `http://localhost:5000/audio/${audioName}.wav`;
+          const audioUrl = `http://localhost:5000/audio/${audioName}.mp3`;
           // const audioUrl = data.public_audio_url;
           console.log(audioUrl)
 
@@ -257,8 +257,8 @@ const App: React.FC = () => {
         a.href = blobUrl;
         
         const audioName = audioState.audioName
-          ? `${audioState.audioName.replace(/\.[^/.]+$/, "")}.wav`
-          : 'audio_generado.wav';
+          ? `${audioState.audioName.replace(/\.[^/.]+$/, "")}.mp3`
+          : 'audio_generado.mp3';
         
         a.download = audioName;
         a.style.display = 'none';
@@ -287,7 +287,7 @@ const App: React.FC = () => {
         <h3 className="text-lg font-semibold text-gray-800 mb-3">Audio Generado</h3>
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <audio controls className="flex-1">
-            <source src={audioState.audioUrl} type="audio/wav" />
+            <source src={audioState.audioUrl} type="audio/mp3" />
             Tu navegador no soporta el elemento de audio.
           </audio>
           

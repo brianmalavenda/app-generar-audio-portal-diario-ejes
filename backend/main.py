@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import datetime
 import logging
 import sys
+from pydub import AudioSegment
 
 # Configurar logging para que vaya a stdout (se captura con docker logs)
 logging.basicConfig(
@@ -31,6 +32,7 @@ AUDIO_FOLDER = os.getenv('AUDIO_FOLDER', '/app/shared-files/audio/')
 # os.path.join(os.getcwd(), "/app/shared-files", "audio")
 SAVE_FOLDER = os.getenv('SAVE_FOLDER', '/app/shared-files/diario_pintado/')
 # Configura CORS para permitir solicitudes desde localhost:3000
+
 ALLOWED_ORIGINS = ['http://localhost:3000']  # Agrega tu dominio de producción
 CORS(app, origins=ALLOWED_ORIGINS)
 
@@ -65,7 +67,7 @@ def serve_audio(filename):
             audio_dir, 
             filename,
             as_attachment=False,  # Para reproducir en el navegador
-            mimetype='audio/wav'
+            mimetype='audio/mp3'
         )
     except Exception as e:
         return {"error": str(e)}, 500
@@ -410,19 +412,84 @@ def generar_audio():
         try:
             result = response.json()     
             logger.info(f"main.py - generar_audio - 01 - Generando audio para el archivo: {result[0]}")
-            # Crear nombre de archivo para el audio
-            filename_sin_extension = filename.split('.')
-            audio_filename = f"{filename_sin_extension[0]}.wav"
-            extension = "wav"
             destino_local = AUDIO_FOLDER
             os.makedirs(destino_local, exist_ok=True)
-            audio_path = os.path.join(destino_local, audio_filename)
 
-            logger.info(f"main.py - generar_audio - 02 - Path del audio: {audio_path}")
+            # Crear nombre de archivo para el audio
+            filename_sin_extension = filename.split('.')
+            # si existe el archivo con extensión wav lo voy a transformar a ogg
+            audio_file = f"{filename_sin_extension[0]}.wav"
+            audio_path = os.path.join(destino_local, audio_file)
+            output_mp3_path = os.path.join(destino_local, f"{filename_sin_extension[0]}.mp3")
+            
+            if os.path.isfile(audio_path):
+                try:
+                    logger.info(f"main.py - generar_audio - 02 - Path del audio: {audio_path}")
+                    # Cargar audio
+                    audio = AudioSegment.from_wav(audio_path)
+        
+                    # Estadísticas antes
+                    wav_size = os.path.getsize(audio_path) / 1024  # KB
+                    
+                    # Convertir a MP3                    
+                    audio.export(
+                        output_mp3_path,
+                        format='mp3',
+                        bitrate='160k',
+                        tags={
+                            'title': os.path.basename(output_mp3_path),
+                            'artist': 'Audio App',
+                            'album': 'Diarios'
+                        }
+                    )
+                    
+                    # Estadísticas después
+                    mp3_size = os.path.getsize(output_mp3_path) / 1024  # KB
+                    compresion = (1 - (mp3_size / wav_size)) * 100
+                    
+                    logger.info(f"""
+                    ✅ Conversión exitosa:
+                    Entrada:  {os.path.basename(audio_path)} ({wav_size:.1f} KB)
+                    Salida:   {os.path.basename(output_mp3_path)} ({mp3_size:.1f} KB)
+                    Bitrate:  160k
+                    Compresión: {compresion:.1f}%
+                    """)
+                    
+                    # Eliminar WAV original si se solicita
+                    if os.path.exists(audio_path):
+                        os.remove(audio_path)
+                        print(f"🗑️  Eliminado WAV original")
+        
+                except Exception as error_convert:
+                    logger.info(f"❌ Error en la conversión WAV a MP3: {error_convert}")
+                    
+            #     except Exception as e:
+            #         print(f"Error en conversión: {e}")
+            #         return False
+                
+            #         if success:
+            #             # Verificar que el OGG se creó correctamente
+            #             if os.path.exists(audio_path_ogg) and os.path.getsize(audio_path_ogg) > 0:
+            #                 logger.info(f"✅ Conversión exitosa")
+                        
+            #             try:
+            #                 os.remove(audio_path)
+            #                 logger.info(f"🗑️  Eliminado archivo WAV: {audio_file}")
+
+            #                 logger.info(f"main.py - generar_audio - 02 b - El archivo esta en formato ogg {audio_path}")
+
+            #             except Exception as delete_error:
+            #                 logger.info(f"⚠️  No se pudo eliminar el WAV: {delete_error}")
+            #                 # Continuar con el WAV si no se pudo eliminar
+            # else:
+            # # si no existe con extension wav busco el ogg directamente
+            # audio_path = os.path.join(destino_local, f"{filename_sin_extension[0]}.ogg")
+            # if audio_path.is_file():
+            #     logger.info(f"main.py - generar_audio - 02 b - El archivo esta en formato ogg {audio_path}")
 
             # if os.path.exists(audio_path):
             # debo descargar el audio y tenerlo localmente para reenviarlo al cliente
-            return jsonify({"status": "OK", "message": "Archivo de audio generado", "public_audio_url": audio_path}), 200
+            return jsonify({"status": "OK", "message": "Archivo de audio generado"}), 200
 
             # esta es la versión donde no descargaba el audio sino que solo devolvía la url pública
             # return jsonify({"status": "OK", "message": "Archivo de audio generado", "public_audio_url": result[0]['public_audio_url']}), 200

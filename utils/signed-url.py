@@ -17,7 +17,7 @@ def generate_signed_url(bucket_name, blob_name, expiration_minutes=60):
 def get_audio_url():
     filename = request.args.get('filename')
     # Generar URL firmada
-    audio_url = generate_signed_url('tu-bucket-audio', f"audios/{filename}.wav")
+    audio_url = generate_signed_url('tu-bucket-audio', f"audios/{filename}.mp3")
     
     return jsonify({
         "audio_url": audio_url,

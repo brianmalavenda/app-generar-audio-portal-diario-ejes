@@ -135,9 +135,10 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
         audio_encoding = "LINEAR16"  # Único soportado para audio largo
         extension = ".wav" # No soporta el formato OGG_OPUS
     else:
+        print("############# Audio corto")
         url = "https://texttospeech.googleapis.com/v1/text:synthesize"
-        audio_encoding = "OGG_OPUS"  # Puedes usar MP3, OGG_OPUS, etc.
-        extension = ".ogg"
+        audio_encoding = "MP3"  # Puedes usar MP3, OGG_OPUS, etc.
+        extension = ".mp3"
 
     headers = {
         "Authorization": f"Bearer {gcloud.token}",
@@ -285,7 +286,7 @@ def descargar_audio_gs(gcloud, bucket_name, audio_name, destino_local):
     Args:
         gcloud: Objeto con token y project_id
         bucket_name: Nombre del bucket (audios-text-to-speech-01)
-        audio_name: Nombre del archivo en el bucket (audio_test_01.wav)
+        audio_name: Nombre del archivo en el bucket (audio_test_01.mp3)
         destino_local: Ruta local donde guardar el archivo
     """
     

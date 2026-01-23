@@ -76,14 +76,14 @@ clean_images() {
     docker image prune -f
     
     # Opcional: eliminar imágenes específicas de la app
-    read -p "¿Deseas eliminar las imágenes de la aplicación? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        print_color "Eliminando imágenes de la aplicación..." "$YELLOW"
-        docker rmi api-proxy:latest 2>/dev/null || true
-        docker rmi backend:latest 2>/dev/null || true
-        docker rmi frontend:latest 2>/dev/null || true
-    fi
+    # read -p "¿Deseas eliminar las imágenes de la aplicación? (y/N): " -n 1 -r
+    # echo
+    # if [[ $REPLY =~ ^[Yy]$ ]]; then
+    #     print_color "Eliminando imágenes de la aplicación..." "$YELLOW"
+    #     docker rmi api-proxy:latest 2>/dev/null || true
+    #     docker rmi backend:latest 2>/dev/null || true
+    #     docker rmi frontend:latest 2>/dev/null || true
+    # fi
 }
 
 # Limpiar redes
@@ -105,14 +105,14 @@ clean_volumes() {
     print_color "=== Limpiando volúmenes ===" "$BLUE"
     
     # Preguntar si eliminar volúmenes (pueden contener datos importantes)
-    read -p "¿Deseas eliminar los volúmenes? Esto borrará todos los datos persistentes (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        print_color "Eliminando volúmenes no utilizados..." "$YELLOW"
-        docker volume prune -f
-    else
-        print_color "Manteniendo volúmenes (datos persistentes)" "$GREEN"
-    fi
+    # read -p "¿Deseas eliminar los volúmenes? Esto borrará todos los datos persistentes (y/N): " -n 1 -r
+    # echo
+    # if [[ $REPLY =~ ^[Yy]$ ]]; then
+    #     print_color "Eliminando volúmenes no utilizados..." "$YELLOW"
+    #     docker volume prune -f
+    # else
+    #     print_color "Manteniendo volúmenes (datos persistentes)" "$GREEN"
+    # fi
 }
 
 # Reconstruir imágenes
