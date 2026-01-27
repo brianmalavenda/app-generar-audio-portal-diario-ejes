@@ -25,7 +25,7 @@ services:
     image: api-proxy
     container_name: api-proxy-container
     ports:
-      - "5001:5000"
+      - "5001:5000" # puerto host:puerto contenedor
     # volumes:
     #   - ./shared:/app/shared-files
     volumes:
@@ -45,6 +45,3 @@ services:
 networks:
   tts-network:
     driver: bridge
-# secrets:
-#   google_credentials:
-#     external: true

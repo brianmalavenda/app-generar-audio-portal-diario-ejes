@@ -198,7 +198,6 @@ main() {
     
     case $option in
         1)
-            clean_swarm
             clean_containers
             clean_networks
             clean_volumes
@@ -208,7 +207,6 @@ main() {
             test_services
             ;;
         2)
-            clean_swarm
             clean_containers
             clean_networks
             clean_volumes
