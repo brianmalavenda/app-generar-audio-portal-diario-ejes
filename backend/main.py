@@ -384,20 +384,23 @@ def convertir_a_formato_ssml(input_path,output_path):
         return [cantidad_palabras, cantidad_caracteres]
     except Exception as e:
         logger.info (f"main.py - convertir_a_formato_ssml - 02 - Error al convertir a SSML: {str(e)}")
+    
+    # creo que esta parte no tiene sentido
+    
     # Obtener el nombre del archivo del cuerpo de la solicitud
-    base_url = "http://localhost:5001/"
-    url = base_url + filename
-    # filename = request.get_json()['filename']
-    file_path = os.path.join(SAVE_FOLDER, filename)
+    # base_url = "http://localhost:5001/"
+    # url = base_url + filename
+    # # filename = request.get_json()['filename']
+    # file_path = os.path.join(SAVE_FOLDER, filename)
 
-    # Verificar que el archivo existe
-    if not os.path.exists(file_path):
-        return jsonify({'error': 'File not found'}), 404
+    # # Verificar que el archivo existe
+    # if not os.path.exists(file_path):
+    #     return jsonify({'error': 'File not found'}), 404
 
-    response = requests.post(url)
+    # response = requests.post(url)
 
-    # return jsonify({'message': 'Audio generated successfully', 'filename': filename}), 200
-    return send_file(file_path, as_attachment=True)
+    # # return jsonify({'message': 'Audio generated successfully', 'filename': filename}), 200
+    # return send_file(file_path, as_attachment=True)
 
 @app.route('/api/generar_audio', methods=['GET'])
 # @secure_endpoint # Este endpoint solo puede ser llamado desde el frontend
