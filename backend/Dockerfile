@@ -3,14 +3,12 @@ FROM python:3.11-slim
 
 # 1. Instalar FFmpeg y dependencias del sistema
 RUN apt-get update && apt-get install -y \
+    curl \
     ffmpeg \
     libsndfile1 \
-    && rm -rf /var/lib/apt/lists/*  # Limpiar caché para reducir tamaño
-
+    && rm -rf /var/lib/apt/lists/*
+# Limpiar caché para reducir tamaño de la imagen
     
-# 2. Verificar instalación
-RUN ffmpeg -version | head -1
-
 # Directorio de trabajo
 WORKDIR /app
 
