@@ -211,4 +211,5 @@ def health():
     return {"message": "Mandame un audio que te lo traduzco al toque"}
 
 if __name__ == '__main__':
+    #Dentro de un contenedor, localhost es solo el contenedor mismo. Si quieres que otro contenedor lo vea, Flask debe escuchar en 0.0.0.0 (todas las interfaces de red).
     app.run(host='0.0.0.0', port=5000, debug=True)
