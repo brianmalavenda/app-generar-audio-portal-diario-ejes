@@ -336,7 +336,7 @@ const App: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chatId: '-1001805776638',
-          fileName: 'test-13.docx',
+          fileName: file.name,
           audioFileName: files.audio
         }),
       });
