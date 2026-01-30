@@ -140,7 +140,7 @@ const App: React.FC = () => {
       });
 
       const response = await fetch(
-        `http://localhost:5000/api/generar_audio?filename=procesado_${filename}`,
+        `http://localhost:5000/api/generar_audio?filename=${encodeURIComponent(filename)}`,
         {
           method: 'GET',
           headers: {

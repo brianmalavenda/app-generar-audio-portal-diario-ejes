@@ -14,6 +14,7 @@ import logging
 import sys
 from pydub import AudioSegment
 from api.telegram_services import telegram_bp
+from dataclasses import dataclass
 
 # Configurar logging para que vaya a stdout (se captura con docker logs)
 logging.basicConfig(
@@ -39,24 +40,18 @@ CORS(app, origins=ALLOWED_ORIGINS)
 
 app.register_blueprint(telegram_bp)
 
-# CORS(app, 
-#      origins=ALLOWED_ORIGINS,
-#      supports_credentials=True,
-#      allow_headers=['Content-Type', 'Authorization', 'Accept'],
-#      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
-
-# CORS(app, resources={
-#     r"/api/*": {
-#         "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
-#         "methods": ["GET", "POST"],
-#         "allow_headers": ["Content-Type"]
-#     }
-# })
-
-
 class Heading1NotFoundException(Exception):
     """Excepción personalizada para cuando no se encuentra un Heading 1"""
     pass
+
+@dataclass
+class FileToAudioInfo:
+    name: str = "test"
+    path: str = "/app/shared-files/diario_ssml/test.xml"
+    content: str = None
+    extension: str = ".ssml"
+
+file_to_audio_info = FileToAudioInfo()
 
 @app.route('/audio/<filename>')
 def serve_audio(filename):
@@ -159,35 +154,36 @@ def upload_file():
     file = request.files['file']
     if file.filename == '':
         return 'No file selected', 400
-    
-    
-    FILENAME = file.filename
-    logger.info(f"main.py - upload_file - 01 - Nombre del archivo subido: {FILENAME}")
+
+    # logger.info(f"main.py - upload_file - 01 - Nombre del archivo subido: {FILENAME}")
     # Asegurarse de que el directorio existe (por si acaso)
     os.makedirs(SAVE_FOLDER, exist_ok=True)
 
     file_path = os.path.join(SAVE_FOLDER, file.filename)
-    logger.info(f"main.py - upload_file - 02 - Guardando archivo en: {file_path}")
+    logger.info(f"main.py - upload_file - 01 - Guardando archivo en: {file_path}")
     file.save(file_path)
-    logger.info(f"main.py - upload_file - 03 - El archivo se llama: {file.filename}")
+    logger.info(f"main.py - upload_file - 02 - El archivo se llama: {file.filename}")
 
-    filename_sin_extension = file.filename.split('.')
-    
-    nombre_archivo_procesado = "procesado_" + filename_sin_extension[0] + ".docx"
-    logger.info(f"main.py - upload_file - 04 - Nombre de mi archivo procesado {nombre_archivo_procesado}")
-    documento_salida = os.path.join('/app/shared-files/diario_procesado/', nombre_archivo_procesado)
- 
-    nombre_archivo_ssml = "ssml_" + filename_sin_extension[0] + ".xml"
-    logger.info(f"main.py - upload_file - 05 - Nombre de mi archivo ssml {nombre_archivo_ssml}")
-    xml_salida = os.path.join('/app/shared-files/diario_ssml/', nombre_archivo_ssml)
-    
-    extraer_texto_resaltado(file_path, documento_salida)
-    logger.info("main.py - upload_file - 06 - Procese el documento y extraje lo resaltado, vamos bien")
-    
-    palabras_caracteres = convertir_a_formato_ssml(documento_salida, xml_salida)
-    tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(xml_salida)
+    file_to_audio_info.name=file.filename.split('.')[0]
+
+    doc_resaltado = "p_" + file_to_audio_info.name + ".docx"
+    doc_resaltado_path = os.path.join('/app/shared-files/diario_procesado/', doc_resaltado)
+    extraer_texto_resaltado(file_path, doc_resaltado_path)
+    logger.info("main.py - upload_file - 03 - Documento procesado con texto resaltado guardado en: {doc_resaltado_path}")     
+
+    doc_ssml = "ssml_" + file_to_audio_info.name + ".xml"
+    doc_ssml_path = os.path.join('/app/shared-files/diario_ssml/', doc_ssml)
+    file_to_audio_info.path = leer_archivo_ssml(doc_ssml_path)
+    file_to_audio_info.extension = ".xml"
+
+    palabras_caracteres = convertir_a_formato_ssml(doc_resaltado_path, doc_ssml_path)
+    tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(doc_ssml_path)
+
+    file_to_audio_info.content = doc_ssml_path
+    logger.info("main.py - upload_file - 04 - Documento convertido a formato ssml y guardado en: {doc_ssml_path}")     
+
     response_data = {"status": "OK", "Cantidad de palabras en SSML:": palabras_caracteres[0], "Cantidad de caracteres en SSML": palabras_caracteres[1], "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo }
-    logger.info (f"main.py - upload_file - 06 - {response_data}")
+    logger.info (f"main.py - upload_file - 05 - {response_data}")
     
     return jsonify({"palabras:": palabras_caracteres[0], "caracteres": palabras_caracteres[1], "tamanio" : tamanio_megabytes_archivo }), 200
 
@@ -402,17 +398,42 @@ def convertir_a_formato_ssml(input_path,output_path):
     # # return jsonify({'message': 'Audio generated successfully', 'filename': filename}), 200
     # return send_file(file_path, as_attachment=True)
 
+def leer_archivo_ssml(ruta_archivo: str) -> str:
+    """Lee archivo SSML/XML y retorna contenido como string"""
+    with open(ruta_archivo, 'r', encoding='utf-8') as f:
+        return f.read()
+
 @app.route('/api/generar_audio', methods=['GET'])
 # @secure_endpoint # Este endpoint solo puede ser llamado desde el frontend
 @cross_origin(origins=['http://localhost:3000', 'http://127.0.0.1:3000'])
 def generar_audio():
-    logger.info(f"main.py - generar_audio - 00 - en la api")
+    # no recibo un archivo porque el archivo ya fue subido previamente y procesado
     filename = request.args.get('filename')
     if not filename:
-        return "Filename es requerido", 400
+        return jsonify({'error': 'Filename parameter is required'}), 400
+
+    headers = {
+        'Content-Type': 'application/json'
+    }
+
+    ssml_filename = "ssml_" + filename.split('.')[0] + ".xml"
+    # Leer archivo como BYTES para multipart
+    with open(file_path, 'rb') as f:
+        content_bytes = f.read()
+    # Sirve para ver tamaño del archivo 
+    content = leer_archivo_ssml(SAVE_FOLDER + ssml_filename)
     
-    url = f"http://api-proxy:5000/api_proxy/generar_audio?filename={filename}"
-    response = requests.get(url)    
+    files = {
+        'file': (ssml_filename, content_bytes, 'application/xml')
+    }
+
+    body = {
+        is_long: len(content) > 5000,
+        language_code: 'es-ES',
+        voice_name: 'es-ES-Standard-A'
+    }
+
+    response = requests.post('http://api-proxy:5000/api_proxy/generar_audio', headers=headers, json=body, files=files)
 
     if response.status_code == 200:
         try:
@@ -433,10 +454,6 @@ def generar_audio():
                     logger.info(f"main.py - generar_audio - 02 - Path del audio: {audio_path}")
                     # Cargar audio
                     audio = AudioSegment.from_wav(audio_path)
-        
-                    # Estadísticas antes
-                    wav_size = os.path.getsize(audio_path) / 1024  # KB
-                    
                     # Convertir a MP3                    
                     audio.export(
                         output_mp3_path,
@@ -449,18 +466,6 @@ def generar_audio():
                         }
                     )
                     
-                    # Estadísticas después
-                    mp3_size = os.path.getsize(output_mp3_path) / 1024  # KB
-                    compresion = (1 - (mp3_size / wav_size)) * 100
-                    
-                    logger.info(f"""
-                    ✅ Conversión exitosa:
-                    Entrada:  {os.path.basename(audio_path)} ({wav_size:.1f} KB)
-                    Salida:   {os.path.basename(output_mp3_path)} ({mp3_size:.1f} KB)
-                    Bitrate:  160k
-                    Compresión: {compresion:.1f}%
-                    """)
-                    
                     # Eliminar WAV original si se solicita
                     if os.path.exists(audio_path):
                         os.remove(audio_path)
@@ -468,40 +473,9 @@ def generar_audio():
         
                 except Exception as error_convert:
                     logger.info(f"❌ Error en la conversión WAV a MP3: {error_convert}")
-                    
-            #     except Exception as e:
-            #         print(f"Error en conversión: {e}")
-            #         return False
-                
-            #         if success:
-            #             # Verificar que el OGG se creó correctamente
-            #             if os.path.exists(audio_path_ogg) and os.path.getsize(audio_path_ogg) > 0:
-            #                 logger.info(f"✅ Conversión exitosa")
-                        
-            #             try:
-            #                 os.remove(audio_path)
-            #                 logger.info(f"🗑️  Eliminado archivo WAV: {audio_file}")
 
-            #                 logger.info(f"main.py - generar_audio - 02 b - El archivo esta en formato ogg {audio_path}")
-
-            #             except Exception as delete_error:
-            #                 logger.info(f"⚠️  No se pudo eliminar el WAV: {delete_error}")
-            #                 # Continuar con el WAV si no se pudo eliminar
-            # else:
-            # # si no existe con extension wav busco el ogg directamente
-            # audio_path = os.path.join(destino_local, f"{filename_sin_extension[0]}.ogg")
-            # if audio_path.is_file():
-            #     logger.info(f"main.py - generar_audio - 02 b - El archivo esta en formato ogg {audio_path}")
-
-            # if os.path.exists(audio_path):
-            # debo descargar el audio y tenerlo localmente para reenviarlo al cliente
             return jsonify({"status": "OK", "message": "Archivo de audio generado"}), 200
 
-            # esta es la versión donde no descargaba el audio sino que solo devolvía la url pública
-            # return jsonify({"status": "OK", "message": "Archivo de audio generado", "public_audio_url": result[0]['public_audio_url']}), 200
-            # else:
-            #     print("El archivo de audio no fue encontrado después de la generación.")
-            #     return jsonify({"status": "ERROR", "message": "Archivo de audio no se guardo"}), 500
         except Exception as e:
             logger.info(f"main.py - generar_audio - 03 - Error procesando audio: {e}")
             return jsonify({"status": "ERROR", "message": f"Error procesando audio: {e}"}), 500

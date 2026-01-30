@@ -1,0 +1,5 @@
+- Ejes_del_mundo_MVP
+- Descripcion: Esta primer iteracion de mi plataforma de gestion de contenidos dirigida a prensa de grandes medios de comunicacion permitirá algo simple que es subir un archivo de texto con hechos del día con cierto formato valido y a partir de un procesamiento de la información generará un audio que será al estilo postcast y podrá enviarse por telegram en un primer momento junto al compilado de noticias
+- Cantidad de microservicios actuales: 3 - backend, frontent, api-proxy
+- Tecnologías principales: pyhton, flask, next para mi frontent, api text-to-spech de google cloud
+- Herramientas de infraestructura: docker

@@ -123,7 +123,7 @@ def generate_signed_url(bucket_name, audio_filename, expiration_hours=24):
         logger.error(f"❌ Error generando URL firmada: {str(e)}")
         return None
 
-def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
+def sintetizar_audio(gcloud: GoogleCloud, file: FileInfo):
     bucket_name = "audios-text-to-speech-01"
     destino_local = "/app/shared-files/audio"
 
@@ -230,7 +230,7 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
 
         logger.info(f"Vuelta numero: {vueltas + 1}")    
         # Esperar antes de consultar
-        time.sleep(10)
+        time.sleep(2)
         # Consultar estado de la operación
         op_response = requests.get(operation_url, headers=headers)
         
@@ -258,7 +258,7 @@ def synthesize_speech(gcloud: GoogleCloud, file: FileInfo):
                 }
             else:
                 # en audio_path mando toda la ruta incluido el nombre del archivo
-                time.sleep(10)
+                time.sleep(2)
                 # tengo que descargar el audio desde GCS porque necesito tener el archivo en el servidor para reenviarlo a telegram
                 # public_url = make_audio_public(bucket_name, f"{audio_filename}")
                 descargar_audio_gs(gcloud, bucket_name, f"{file.name}{extension}", audio_path)

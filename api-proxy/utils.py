@@ -4,11 +4,25 @@ import zipfile
 import xml.etree.ElementTree as ET
 from docx import Document
 
-def procesar_archivo(documento_salida):
+# Aca extiendo algunas funciones que hoy en día no son útiles. Vamos a trabajar solo con archivos docx y doc. Los formatos xml, txt, pdf inclusive los dejo de lado por ahora.
+
+def validar_procesar(documento_salida):
     """Procesa archivo detectando automáticamente su tipo"""
     
     print(f"Procesando archivo: {documento_salida}")
     
+    
+    # Determinar si es SSML (XML) o texto plano
+    is_ssml = file_ext in ['.xml', '.ssml']
+    
+    # Validar SSML si corresponde
+    if is_ssml:
+        try:
+            ET.fromstring(content)
+        except ET.ParseError as e:
+            raise HTTPException(400, f"XML inválido: {str(e)}")
+
+
     # Verificar extensión
     _, ext = os.path.splitext(documento_salida.lower())
     
@@ -20,9 +34,13 @@ def procesar_archivo(documento_salida):
         elif ext == '.xml':
             # Procesar como XML
             return procesar_xml(documento_salida)
-            
-        else:
-            # Intentar como texto plano con diferentes encodings
+
+        elif ext == '.pdf':
+            # Procesar como PDF
+            return procesar_pdf(documento_salida)
+
+        elif ext == '.txt':
+            # Procesar como TXT
             return procesar_texto(documento_salida)
             
     except Exception as e:
@@ -40,6 +58,7 @@ def procesar_docx(ruta_archivo):
         print(f"Error con python-docx, intentando método alternativo: {e}")
         return procesar_docx_alternativo(ruta_archivo)
 
+# Definir mejor que es docx alternativo
 def procesar_docx_alternativo(ruta_archivo):
     """Método alternativo para leer DOCX"""
     try:
@@ -102,6 +121,9 @@ def procesar_texto(ruta_archivo):
     
     print("No se pudo leer el archivo con ningún encoding")
     return None
+
+def procesar_pdf(ruta_archivo):
+    return "Procesamiento de PDF no implementado"
 
 def leer_docx_completo(file_storage):
     """Lee un archivo DOCX incluyendo texto de tablas"""
