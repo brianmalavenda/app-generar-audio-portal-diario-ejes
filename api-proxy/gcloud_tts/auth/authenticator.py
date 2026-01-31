@@ -1,13 +1,13 @@
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
-# from .credentials import GoogleCloudCredentials
+from .credentials import GoogleCloudCredentials
 from ..exceptions import AuthenticationError
 
 class GoogleCloudAuthenticator:
     """Manejador de autenticación con Google Cloud"""
     
     def __init__(self):
-        # self.credentials = credentials
+        self.credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
         self.credentials = None
         self._client = None
     
@@ -39,16 +39,32 @@ class GoogleCloudAuthenticator:
     def authenticate(self) -> service_account.Credentials:
         """Obtiene token usando Service Account"""
         try:
-            # Leer credenciales desde variable de entorno
-            credentials_json = os.getenv('GOOGLE_TTS_API_KEY')
-
-            if credentials_json:
-                # Si las credenciales están en una variable de entorno
-                credentials_info = json.loads(credentials_json)
-                self.credentials = service_account.Credentials.from_service_account_info(
-                    credentials_info,
-                    scopes=['https://www.googleapis.com/auth/cloud-platform']
+            if not self.credentials_path:
+                raise ValueError(
+                    "GOOGLE_APPLICATION_CREDENTIALS no está configurado"
                 )
+            
+            # Convertir a Path para mejor manejo
+            creds_file = Path(self.credentials_path)
+            
+            # Verificar que el archivo existe (está montado)
+            if not creds_file.exists():
+                raise FileNotFoundError(
+                    f"Archivo de credenciales no encontrado: {self.credentials_path}\n"
+                    f"Verifica que el volumen está montado en docker-compose.yml"
+                )
+            
+            if not creds_file.is_file():
+                raise ValueError(f"No es un archivo: {self.credentials_path}")
+            
+            # ✅ LEER DESDE ARCHIVO JSON (volumen montado)
+            with open(creds_file, 'r') as f:
+                credentials_info = json.load(f)
+        
+            self.credentials = service_account.Credentials.from_service_account_info(
+                credentials_info,
+                scopes=['https://www.googleapis.com/auth/cloud-platform']
+            )
 
             if self.credentials.expired:
                 self.credentials.refresh(google.auth.transport.requests.Request())
@@ -65,7 +81,7 @@ class GoogleCloudAuthenticator:
     
     def _authenticate_with_token(self) -> service_account.Credentials:
         """Autenticación con token (implementación básica)"""
-        # Implementar según tus necesidades
+        # No implementado
         pass
     
     @property

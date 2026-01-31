@@ -44,15 +44,6 @@ class Heading1NotFoundException(Exception):
     """Excepción personalizada para cuando no se encuentra un Heading 1"""
     pass
 
-@dataclass
-class FileToAudioInfo:
-    name: str = "test"
-    path: str = "/app/shared-files/diario_ssml/test.xml"
-    content: str = None
-    extension: str = ".ssml"
-
-file_to_audio_info = FileToAudioInfo()
-
 @app.route('/audio/<filename>')
 def serve_audio(filename):
     try:
@@ -164,23 +155,22 @@ def upload_file():
     file.save(file_path)
     logger.info(f"main.py - upload_file - 02 - El archivo se llama: {file.filename}")
 
-    file_to_audio_info.name=file.filename.split('.')[0]
+    filename =file.filename.split('.')[0]
 
-    doc_resaltado = "p_" + file_to_audio_info.name + ".docx"
+    doc_resaltado = "p_" + filename + ".docx"
     doc_resaltado_path = os.path.join('/app/shared-files/diario_procesado/', doc_resaltado)
     extraer_texto_resaltado(file_path, doc_resaltado_path)
-    logger.info("main.py - upload_file - 03 - Documento procesado con texto resaltado guardado en: {doc_resaltado_path}")     
+    logger.info("main.py - upload_file - 03 - Documento procesado con texto resaltado guardado en: " + doc_resaltado_path)     
 
-    doc_ssml = "ssml_" + file_to_audio_info.name + ".xml"
+    doc_ssml = "ssml_" + filename + ".xml"
     doc_ssml_path = os.path.join('/app/shared-files/diario_ssml/', doc_ssml)
-    file_to_audio_info.path = leer_archivo_ssml(doc_ssml_path)
-    file_to_audio_info.extension = ".xml"
-
     palabras_caracteres = convertir_a_formato_ssml(doc_resaltado_path, doc_ssml_path)
+    logger.info("main.py - upload_file - 03 - Documento xml" + doc_ssml)     
+    logger.info("main.py - upload_file - 03 - Documento procesado con texto resaltado guardado en: " + doc_ssml_path)     
+    
     tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(doc_ssml_path)
 
-    file_to_audio_info.content = doc_ssml_path
-    logger.info("main.py - upload_file - 04 - Documento convertido a formato ssml y guardado en: {doc_ssml_path}")     
+    logger.info("main.py - upload_file - 04 - Documento convertido a formato ssml y guardado en: " + doc_ssml_path)     
 
     response_data = {"status": "OK", "Cantidad de palabras en SSML:": palabras_caracteres[0], "Cantidad de caracteres en SSML": palabras_caracteres[1], "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo }
     logger.info (f"main.py - upload_file - 05 - {response_data}")
@@ -398,9 +388,9 @@ def convertir_a_formato_ssml(input_path,output_path):
     # # return jsonify({'message': 'Audio generated successfully', 'filename': filename}), 200
     # return send_file(file_path, as_attachment=True)
 
-def leer_archivo_ssml(ruta_archivo: str) -> str:
+def leer_archivo_ssml(file_path: str) -> str:
     """Lee archivo SSML/XML y retorna contenido como string"""
-    with open(ruta_archivo, 'r', encoding='utf-8') as f:
+    with open(file_path, 'r') as f:
         return f.read()
 
 @app.route('/api/generar_audio', methods=['GET'])
@@ -412,28 +402,29 @@ def generar_audio():
     if not filename:
         return jsonify({'error': 'Filename parameter is required'}), 400
 
-    headers = {
-        'Content-Type': 'application/json'
-    }
-
     ssml_filename = "ssml_" + filename.split('.')[0] + ".xml"
+    file_path = os.path.join('/app/shared-files/diario_ssml', ssml_filename)
+
+    logging.info(f"main.py - generar_audio - 01 - Nombre del archivo SSML: {ssml_filename}")
+
+    logging.info(f"main.py - generar_audio - 01 - Nombre del archivo SSML: {file_path}")
     # Leer archivo como BYTES para multipart
     with open(file_path, 'rb') as f:
         content_bytes = f.read()
     # Sirve para ver tamaño del archivo 
-    content = leer_archivo_ssml(SAVE_FOLDER + ssml_filename)
+    content = leer_archivo_ssml(file_path)
     
     files = {
         'file': (ssml_filename, content_bytes, 'application/xml')
     }
 
-    body = {
-        is_long: len(content) > 5000,
-        language_code: 'es-ES',
-        voice_name: 'es-ES-Standard-A'
+    data = {
+        'is_long': len(content) > 5000,
+        'language_code': 'es-ES',
+        'voice_name': 'es-ES-Standard-A'
     }
 
-    response = requests.post('http://api-proxy:5000/api_proxy/generar_audio', headers=headers, json=body, files=files)
+    response = requests.post('http://api-proxy:5000/api_proxy/generar_audio', files=files, data=data, timeout=30)
 
     if response.status_code == 200:
         try:

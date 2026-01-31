@@ -1,0 +1,76 @@
+# .dockerignore
+# Archivos de entorno (NUNCA subir al contenedor)
+.env
+.env.*
+!.env.example  # Excepto ejemplo
+
+# Archivos de desarrollo Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Entornos virtuales
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Editor y IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Credenciales y secrets
+secrets/
+secrets/*.json
+gcloud_credentials.json
+google-key.json
+*.pem
+*.key
+*.crt
+
+# Archivos temporales
+temp/
+tmp/
+*.tmp
+*.temp
+
+# Tests
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+
+# Docker
+docker-compose.override.yml

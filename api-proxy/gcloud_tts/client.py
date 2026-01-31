@@ -8,21 +8,14 @@ class GoogleCloudTTSClient:
     
     def __init__(
         self,
-        # project_id: str,
-        # credentials_file: Optional[str] = None,
-        # token: Optional[str] = None
+        credentials_json: Optional[str] = None
     ):
         # Crear credenciales
-        # no quiero crear credenciales porque las tengo en mi entorno
-        # credentials = GoogleCloudCredentials(
-        #     project_id=project_id,
-        #     credentials_file=credentials_file,
-        #     token=token
-        # )
+        # credentials_json=credentials_json, lo cargo directamente de un secreto
+        credentials = GoogleCloudCredentials()
         
         # Inicializar componentes
-        # self.authenticator = GoogleCloudAuthenticator(credentials)
-        self.authenticator = GoogleCloudAuthenticator()
+        self.authenticator = GoogleCloudAuthenticator(credentials)
         self.tts = TextToSpeechSynthesizer(self.authenticator)
     
     def synthesize_audio(

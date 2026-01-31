@@ -1,38 +1,44 @@
 FROM python:3.11-slim
 
-# Instalar dependencias del sistema necesarias para gcloud
+# Instalar dependencias del sistema si es necesario
 RUN apt-get update && apt-get install -y \
-    curl \
-    gnupg \
-    git \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar Google Cloud SDK
-# RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | \
-#     tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-#     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-#     apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - && \
-#     apt-get update -y && \
-#     apt-get install google-cloud-cli -y
-
-# Directorio de trabajo
 WORKDIR /app
 
-# Copiar requirements primero (para caché eficiente)
-COPY requirements.txt .
+# 1. Copiar el paquete primero
+COPY gcloud_tts/ ./gcloud_tts/
 
-# Instalar dependencias de Python
+# 2. Instalar el paquete en modo desarrollo
+RUN pip install -e ./gcloud_tts/
+
+# 3. Copiar requirements e instalar dependencias de la app
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar el código de la aplicación
-COPY . .
+# Copiar el resto de la aplicación
+COPY main.py .
 
-# Copiar el script de entrypoint para crear carpetas
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# Crear directorios necesarios
+RUN mkdir -p /app/shared-files
 
-# Exponer puerto
+# Crear directorio para credenciales (vacío en la imagen)
+RUN mkdir -p /app/secrets && chmod 700 /app/secrets
+
+# Variable de entorno (apunta a donde MONTAREMOS las credenciales)
+ENV GOOGLE_CREDENTIALS=/app/secrets/google-credentials.json
+
 EXPOSE 5000
 
-ENTRYPOINT [ "docker-entrypoint.sh" ]
+# Usuario no-root (seguridad)
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app \
+    # Asegurar que el directorio de credenciales tenga permisos
+    chmod 755 /app/secrets
+USER appuser
+
+EXPOSE 5000
+
 CMD ["python", "main.py"]

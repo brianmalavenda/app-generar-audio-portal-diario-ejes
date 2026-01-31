@@ -4,9 +4,10 @@ from typing import Optional
 @dataclass
 class GoogleCloudCredentials:
     """Contenedor inmutable para credenciales"""
-    # me sirve para agrupar los datos de credenciales
-    project_id: str
-    credentials_file: Optional[str] = None
+    # configuro las credenciales a partir de mi key-json
+    credentials_json: str = None
+    # dejo abierta la posibilidad de autenticacion con project y token
+    project_id: Optional[str] = None
     token: Optional[str] = None
     
     def __post_init__(self):

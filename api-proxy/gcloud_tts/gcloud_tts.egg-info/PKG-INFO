@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: gcloud-tts
+Version: 1.0.0
+Summary: Cliente para Text-to-Speech de Google Cloud
+Author-email: Brian Malavenda <brian.l.malavenda@gmail.com>
+License: MIT
+Project-URL: Homepage, https://github.com/brianmalavenda/gcloud-tts
+Requires-Python: >=3.8
+License-File: LICENSE
+Requires-Dist: google-cloud-texttospeech>=2.0.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: typing-extensions>=4.5.0
+Dynamic: license-file

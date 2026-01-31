@@ -30,15 +30,12 @@ services:
     #   - ./shared:/app/shared-files
     volumes:
       - ./shared:/app/shared-files
-      - ./api-proxy/credentials/google-credentials.json:/app/google-key.json  # Montas el archivo directamente
+      - ./secrets:/app/secrets:ro  # :ro = solo lectura
     environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/google-key.json # Le dices dónde está
+      # Variable apunta al archivo MONTADO via volumen
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/gcloud_credentials.json
     networks:
       - tts-network      
-    # secrets:
-    #   - google_credentials
-    # environment:
-    #   - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google_credentials
     depends_on:
       - backend
 

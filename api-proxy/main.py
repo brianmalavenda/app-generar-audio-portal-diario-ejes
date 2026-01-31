@@ -3,8 +3,7 @@ from dotenv import load_dotenv
 import os
 from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS  
-from gcloud_SA_access import get_access_token_service_account, get_project_id_service_account, sintetizar_audio
-from utils import leer_docx_completo, validar_procesar
+from .utils import leer_docx_completo, validar_procesar
 from dataclasses import dataclass
 import json
 import logging
@@ -40,67 +39,82 @@ class FileInfo:
 # ):
 @app.route('/api_proxy/generar_audio', methods=['POST'])
 def generar_audio():
-    data = request.get_json()
-    # return jsonify({"recibido": data}), 200
-
-    # Validar extensión
-    # allowed_extensions = {'.xml', '.ssml', '.txt'}
-    # file_ext = os.path.splitext(file.filename)[1].lower()
-
-     if data.content is None:
-        raise HTTPException(
-            400, 
-            f"No se envío el contendi a procesar"
-        )
-    
-    logger.info(f"api-proxy - api - generar_audio - 01 - Contenido del archivo leído correctamente")
-    
-    gcloud_client = GoogleCloudTTSClient()
-    
-    if not gcloud_client.is_authenticated():
-        return jsonify({'error': 'Error de autenticación con Google Cloud'}, 500)
-
     try:
-        #result = sintetizar_audio(gcloud_session, file)
-        if data.is_long:
-            result = gcloud_client.synthesize(
-                text = data.content,
-                # output_file = f"/app/shared-files/audios/{file.name}.mp3",
-                audio_format = "WAV",
-                language_code = "es-ES"
-            ).audio_content
-        else:
-            result = gcloud_client.synthesize(
-                text = data.content,
-                # output_file = f"/app/shared-files/audios/{file.name}.mp3",
-                audio_format = "WAV",
-                language_code = "es-ES"
-            ).audio_content
+        # 1. Verificar archivo
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+        
+        # 2. Verificar que se subió un archivo
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
+
+        # 3. Leer contenido XML
+        xml_content_bytes = file.read()
+        xml_content = xml_content_bytes.decode('utf-8')
+        
+        logger.info(f"api-proxy - generar_audio - Archivo recibido: {file.filename}")
+        logger.info(f"api-proxy - generar_audio - Tamaño contenido: {len(xml_content)} chars")
+        
+        # 4. Obtener metadata del form data (NO de request.get_json())
+        is_long = request.form.get('is_long', 'false').lower() == 'true'
+        language_code = request.form.get('language_code', 'es-ES')
+        voice_name = request.form.get('voice_name', 'es-ES-Standard-A')
+        audio_format = request.form.get('audio_format', 'MP3')
+        
+        logger.info(f"api-proxy - generar_audio - Parámetros: is_long={is_long}, language={language_code}, format={audio_format}")
+        
+        # 5. Inicializar cliente Google Cloud
+        gcloud_client = GoogleCloudTTSClient()
+        
+        if not gcloud_client.is_authenticated:
+            logger.error("api-proxy - generar_audio - Error de autenticación Google Cloud")
+            return jsonify({'error': 'Error de autenticación con Google Cloud'}), 500
+        
+        # 6. Sintetizar audio (mismo código para ambos casos según veo)
+        result = gcloud_client.synthesize(
+            text=xml_content,
+            language_code=language_code,
+            voice_name=voice_name,
+            audio_format=audio_format
+        )
+        
+        # 7. Preparar response (asegúrate de tener acceso a audio_content)
+        audio_content = result.audio_content if hasattr(result, 'audio_content') else result
+        
+        logger.info(f"api-proxy - generar_audio - Audio generado: {len(audio_content)} bytes")
+        
+        # 8. Devolver como streaming response
+        content_types = {
+            "MP3": "audio/mpeg",
+            "WAV": "audio/wav",
+            "OGG_OPUS": "audio/ogg",
+            "LINEAR16": "audio/wav"
+        }
         
         # Crear stream en memoria
-        audio_stream = io.BytesIO(result)
+        audio_stream = io.BytesIO(audio_content)
         
         # Devolver como streaming response
-        return StreamingResponse(
+        return send_file(
             audio_stream,
-            media_type=content_types.get(audio_format, "audio/mpeg"),
-            headers={
-                "Content-Disposition": f'inline; filename="tts_audio.{audio_format.lower()}"',
-                "X-TTS-Text-Length": str(len(data.content)),
-                "X-TTS-Language": language_code
-            }
+            mimetype=content_types.get(audio_format, "audio/mpeg"),
+            as_attachment=True,
+            download_name=f"audio_{file.filename}.{audio_format.lower()}"
         )
-
-        logger.info(f"api-proxy - api - generar_audio - 03 - Resultado de la síntesis: {result}")  # Imprime solo los primeros 100 caracteres del resultado
-        if result:
-            return jsonify({'status': 'success', 'message': 'Audio generated successfully'},200)
-        else:
-            return jsonify({'status': 'error', 'message': 'Audio synthesis failed'}, 500)    
-
-        logger.info(f"-------api-proxy - main.py - generar_audio - 04 - Estado de la síntesis: {ok}")
+        # O usando Response de Flask:
+        # return Response(
+        #     audio_content,
+        #     mimetype=content_types.get(audio_format, "audio/mpeg"),
+        #     headers={
+        #         "Content-Disposition": f'attachment; filename="audio_{file.filename}.{audio_format.lower()}"'
+        #     }
+        # )
+        
     except Exception as e:
-        logger.info(f"api-proxy - main.py - generar_audio - 04 - Error en generar_audio: {str(e)}")
-        return jsonify({'error': 'Internal server error'}, 500)
+        logger.error(f"api-proxy - generar_audio - Error: {str(e)}", exc_info=True)
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
     
 @app.get("/api_proxy/health")
 def health():
