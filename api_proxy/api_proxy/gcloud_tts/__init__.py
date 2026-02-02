@@ -1,4 +1,3 @@
-# api-proxy/gcloud_tts/__init__.py
 """
 gcloud-tts: Cliente para Text-to-Speech de Google Cloud.
 

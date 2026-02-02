@@ -2,15 +2,15 @@
 ---
 📁 Estructura de archivos:
   📁 gcloud_CLI/
-  📁 test/
+  📁 tests/
+  📁 src/
+    📄 main.py
+    📄 utils.py
   📁 utils/
   📄 .gitignore
   📄 docker-entrypoint.sh
-  📄 gcloud_SA_access.py
   📄 requirements.txt
   📄 Dockerfile
-  📄 main.py
-  📄 utils.py
   📄 .env
   📄 README.md
 

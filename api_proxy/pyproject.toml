@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "api-proxy"
+version = "0.1.0"
+description = "API Proxy para generación de audio con Google Cloud TTS"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Brian Malavenda", email = "brian.malavenda@gmail.com"}
+]
+
+dependencies = [
+    "flask>=2.3.0",
+    "flask-cors>=4.0.0",
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0",
+    "cryptography>=3.4.0",
+    "python-docx>=1.1.0",
+    "google-cloud-texttospeech>=2.0.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+api-proxy = "api_proxy.__main__:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-v --tb=short"
+
+[tool.hatch.build.targets.wheel]
+packages = ["api_proxy"]

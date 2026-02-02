@@ -413,15 +413,15 @@ def generar_audio():
         content_bytes = f.read()
     # Sirve para ver tamaño del archivo 
     content = leer_archivo_ssml(file_path)
-    
+    is_long = len(content) > 5000
     files = {
         'file': (ssml_filename, content_bytes, 'application/xml')
     }
 
     data = {
-        'is_long': len(content) > 5000,
         'language_code': 'es-ES',
-        'voice_name': 'es-ES-Standard-A'
+        'voice_name': 'es-ES-Standard-A',
+        'audio_format': 'WAV' if is_long else 'MP3' # si es largo uso WAV
     }
 
     response = requests.post('http://api-proxy:5000/api_proxy/generar_audio', files=files, data=data, timeout=30)
