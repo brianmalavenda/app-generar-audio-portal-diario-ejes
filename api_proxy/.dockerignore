@@ -52,13 +52,13 @@ Thumbs.db
 logs/
 
 # Credenciales y secrets
-secrets/
-secrets/*.json
-gcloud_credentials.json
-google-key.json
-*.pem
-*.key
-*.crt
+# secrets/
+# secrets/*.json
+# gcloud_credentials.json
+# google-key.json
+# *.pem
+# *.key
+# *.crt
 
 # Archivos temporales
 temp/

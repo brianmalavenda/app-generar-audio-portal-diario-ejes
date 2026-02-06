@@ -5,6 +5,7 @@ from .gcloud_tts.client import GoogleCloudTTSClient
 from .utils.process_files import leer_docx_completo
 from .utils.validate import validar_procesar
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def init_routes(app):
@@ -39,12 +40,15 @@ def init_routes(app):
             logger.info(f"api_proxy - generar_audio - Parámetros: language={language_code}, format={audio_format}")
             
             # 5. Inicializar cliente Google Cloud
+            # creoe l cliente
             gcloud_client = GoogleCloudTTSClient()
-            
+            # me autentico
+            gcloud_client.authenticator.authenticate() 
+            # pregunto si me autentico bine
             if not gcloud_client.is_authenticated:
                 logger.error("api_proxy - generar_audio - Error de autenticación Google Cloud")
                 return jsonify({'error': 'Error de autenticación con Google Cloud'}), 500
-            
+            # uso el cliente para generar audio
             result = gcloud_client.synthesize_audio(
                 text=xml_content,
                 language_code=language_code,

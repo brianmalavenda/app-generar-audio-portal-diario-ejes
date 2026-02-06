@@ -10,6 +10,6 @@ class GoogleCloudCredentials:
     project_id: Optional[str] = None
     token: Optional[str] = None
     
-    def __post_init__(self):
-        if not self.project_id:
-            raise ValueError("project_id es requerido")
+    # def __post_init__(self):
+    #     if not self.project_id:
+    #         raise ValueError("project_id es requerido")

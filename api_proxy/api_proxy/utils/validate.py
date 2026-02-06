@@ -1,4 +1,6 @@
 
+import os
+
 def validar_procesar(documento_salida):
     """Procesa archivo detectando automáticamente su tipo"""
     

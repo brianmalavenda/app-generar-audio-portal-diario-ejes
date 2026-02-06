@@ -5,17 +5,17 @@ from ..exceptions import SynthesisError
 class TextToSpeechSynthesizer:
     """Cliente para síntesis de texto a voz"""
     
-    def __init__(self, authenticator: 'GoogleCloudAuthenticator'):
-        self.authenticator = authenticator
-        self._client = None
+    # def __init__(self ): #authenticator: 'GoogleCloudAuthenticator'):
+        # self.authenticator = authenticator
+        # self._client = None
     
-    @property
-    def client(self) -> texttospeech.TextToSpeechClient:
-        """Lazy initialization del cliente TTS"""
-        if self._client is None:
-            credentials = self.authenticator.authenticate()
-            self._client = texttospeech.TextToSpeechClient(credentials=credentials)
-        return self._client
+    # @property
+    # def client(self) -> texttospeech.TextToSpeechClient:
+    #     """Lazy initialization del cliente TTS"""
+    #     if self._client is None:
+    #         credentials = self.authenticator.authenticate()
+    #         self._client = texttospeech.TextToSpeechClient(credentials=credentials)
+    #     return self._client
     
     def synthesize(
         self,

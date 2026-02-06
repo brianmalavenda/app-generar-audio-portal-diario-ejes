@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "api-proxy"
-version = "0.1.0"
+name = "api_proxy"
+version = "1.3.0"
 description = "API Proxy para generación de audio con Google Cloud TTS"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -29,7 +29,10 @@ test = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
 ]
-
+dev = [
+    "pytest>=7.0.0",
+    "black>=22.0.0",
+]
 [project.scripts]
 api-proxy = "api_proxy.__main__:main"
 
@@ -40,3 +43,5 @@ addopts = "-v --tb=short"
 
 [tool.hatch.build.targets.wheel]
 packages = ["api_proxy"]
+# [tool.setuptools]
+# packages = ["api_proxy", "api_proxy.gcloud_tts", "api_proxy.gcloud_tts.auth", "api_proxy.gcloud_tts.tts"]

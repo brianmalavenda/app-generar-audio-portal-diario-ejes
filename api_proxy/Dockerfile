@@ -12,18 +12,26 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copiar TODO el proyecto primero (necesario para pip install -e .)
-COPY . .
+# COPY . .
+COPY pyproject.toml README.md ./
+COPY api_proxy/ ./api_proxy/
+COPY secrets/ ./secrets/
 
-# Instalar el paquete en modo editable
-RUN pip install --no-cache-dir .
+# Instalar el paquete en modo editable para que los cambios se reflejen inmediatamente
+# RUN pip install --no-cache-dir -e . 
+RUN pip uninstall api_proxy -y 2>/dev/null && \
+    pip install --no-cache-dir -e . 2>/dev/null
 
 # Crear directorios necesarios
-RUN mkdir -p /app/shared-files /app/secrets && \
-    chmod 700 /app/secrets
+# RUN mkdir -p /app/shared-files /app/secrets && \
+RUN mkdir -p /app/shared-files && \
+    chmod 700 /app/secrets && \
+    chmod 600 /app/secrets/* && \
+    chmod 644 /app/secrets/gcloud_credentials.json
 
 # Variable de entorno para credenciales
-ARG GOOGLE_CREDENTIALS=/app/secrets/google-credentials.json
-ENV GOOGLE_CREDENTIALS=${GOOGLE_CREDENTIALS}
+ARG GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/gcloud_credentials.json
+ENV GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
 
 # Crear usuario no-root
 RUN useradd -m -u 1000 appuser && \

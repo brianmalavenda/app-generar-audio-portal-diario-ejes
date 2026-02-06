@@ -2,7 +2,7 @@ import os
 
 class Config:
     """Configuración base"""
-    GOOGLE_CREDENTIALS = os.getenv('GOOGLE_CREDENTIALS', '/app/secrets/google-credentials.json') # ruta por defecto en contenedor
+    GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '/app/secrets/gcloud_credentials.json') # ruta por defecto en contenedor
     
 class DevelopmentConfig(Config):
     DEBUG = True

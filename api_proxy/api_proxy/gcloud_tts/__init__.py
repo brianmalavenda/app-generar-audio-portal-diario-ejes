@@ -1,5 +1,5 @@
 """
-gcloud-tts: Cliente para Text-to-Speech de Google Cloud.
+gcloud_tts: Cliente para Text-to-Speech de Google Cloud.
 
 Paquete para sintetizar texto a audio usando Google Cloud TTS.
 """
@@ -27,7 +27,7 @@ __all__ = [
 ]
 
 # Metadata
-__package_name__ = "gcloud-tts"
+__package_name__ = "gcloud_tts"
 __description__ = "Cliente para Text-to-Speech de Google Cloud"
-__url__ = "https://github.com/brianmalavenda/gcloud-tts"
+__url__ = "https://github.com/brianmalavenda/gcloud_tts"
 __keywords__ = ["google-cloud", "text-to-speech", "tts", "audio"]
