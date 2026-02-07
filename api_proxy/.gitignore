@@ -1,8 +1,7 @@
 # Credenciales y secretos
 !package.json
 secrets/
-credentials/
-credentials/google-credentials.json
+secrets/gcloud-credentials.json
 .env
 google-credentials.json
 __pycache__/
