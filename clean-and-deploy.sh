@@ -121,17 +121,17 @@ rebuild_images() {
     
     if [[ -d "api-proxy" ]]; then
         print_color "Construyendo api-proxy..." "$YELLOW"
-        docker build -t api-proxy:latest ./api-proxy
+        docker build --no-cache -t api-proxy:latest ./api-proxy
     fi
     
     if [[ -d "backend" ]]; then
         print_color "Construyendo backend..." "$YELLOW"
-        docker build -t backend:latest ./backend
+        docker build --no-cache -t backend:latest ./backend
     fi
     
     if [[ -d "frontend" ]]; then
         print_color "Construyendo frontend..." "$YELLOW"
-        docker build -t frontend:latest ./frontend
+        docker build --no-cache -t frontend:latest ./frontend
     fi
 }
 

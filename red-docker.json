@@ -1,0 +1,57 @@
+[
+    {
+        "Name": "app-generar-audio-portal-diario-ejes_tts-network",
+        "Id": "1bec48b0bcbe7139b0be00d2e13c10c915690d391046aa0585b25921e259efcd",
+        "Created": "2026-02-03T13:41:28.740195152+01:00",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": [
+                {
+                    "Subnet": "172.19.0.0/16",
+                    "Gateway": "172.19.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": true,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "0acb1334767f651c5614af9f2351ac665d8c82f0b41082eaa13c178016deb18d": {
+                "Name": "frontend-container",
+                "EndpointID": "3e2818db3496f61ee0d7a161401092ca2fa6792ac341095c68d7b75c52b127f9",
+                "MacAddress": "02:63:ba:7a:63:b6",
+                "IPv4Address": "172.19.0.3/16",
+                "IPv6Address": ""
+            },
+            "1945b567de82101ed0c207d07e4aafb5bdf05981405b85b0733310697adce40d": {
+                "Name": "backend-container",
+                "EndpointID": "8ee2442454725105f55796d1c99b6c5987d77f159b9c9d4202394475920a1ab3",
+                "MacAddress": "a6:61:46:eb:f7:f5",
+                "IPv4Address": "172.19.0.2/16",
+                "IPv6Address": ""
+            },
+            "c331f3e84e237e960ac614d00b1804e18f874124998a333353f8fe6e7d452759": {
+                "Name": "api-proxy-container",
+                "EndpointID": "e3ceb34256c271ee3576f861c9c42bf8b6e8eb1ddef74d0058e9f0dea52e6a22",
+                "MacAddress": "3e:e0:4b:1f:79:d7",
+                "IPv4Address": "172.19.0.4/16",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {},
+        "Labels": {
+            "com.docker.compose.network": "tts-network",
+            "com.docker.compose.project": "app-generar-audio-portal-diario-ejes",
+            "com.docker.compose.version": "1.29.2"
+        }
+    }
+]

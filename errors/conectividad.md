@@ -42,3 +42,33 @@ apt-get update && apg-get upgrade -y
 
 sudo systemctl restart docker
 
+# Continua
+
+1- :/home/brian/Repositorio/app-generar-audio-portal-diario-ejes# sudo iptables -L -v -n | grep DROP
+    Chain FORWARD (policy DROP 93 packets, 5580 bytes)
+        0     0 DROP       0    --  !br-53d0ac800d31 br-53d0ac800d31  0.0.0.0/0            0.0.0.0/0           
+        0     0 DROP       0    --  !docker0 docker0  0.0.0.0/0            0.0.0.0/0           
+    root@brian:/home/brian/Repositorio/app-generar-audio-portal-diario-ejes# sudo iptables -L FORWARD -v -n
+    Chain FORWARD (policy DROP 93 packets, 5580 bytes)
+    pkts bytes target     prot opt in     out     source               destination         
+    84098  374M DOCKER-USER  0    --  *      *       0.0.0.0/0            0.0.0.0/0           
+    84098  374M DOCKER-FORWARD  0    --  *      *       0.0.0.0/0            0.0.0.0/0           
+    root@brian:/home/brian/Repositorio/app-generar-audio-portal-diario-ejes# sudo iptables -L DOCKER-ISOLATION -v -n 2>/dev/null || echo "No DOCKER-ISOLATION chain"
+    No DOCKER-ISOLATION chain
+
+## El Problema
+    Las redes Docker bridge usan el chain FORWARD de iptables para comunicar contenedores. Si la política es DROP y no hay reglas explícitas permitiendo el tráfico, los contenedores no se pueden hablar entre ellos.
+
+## Solucion
+    # Permitir todo el tráfico FORWARD (temporal, se pierde al reiniciar)
+    sudo iptables -P FORWARD ACCEPT
+
+    # O más específico para Docker:
+    sudo iptables -A FORWARD -i br-1bec48b0bcbe -o br-1bec48b0bcbe -j ACCEPT
+    sudo iptables -A FORWARD -i br-1bec48b0bcbe -j ACCEPT
+    sudo iptables -A FORWARD -o br-1bec48b0bcbe -j ACCEPT
+
+    Después de esto, prueba inmediatamente desde tu backend:
+    
+    docker exec -it backend-container sh
+    curl http://api-proxy:5000/api_proxy/health
