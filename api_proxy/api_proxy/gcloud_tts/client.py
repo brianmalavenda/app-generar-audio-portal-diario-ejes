@@ -16,11 +16,16 @@ class GoogleCloudTTSClient:
         
         # Inicializar componentes
         self.authenticator = GoogleCloudAuthenticator()
-        self.tts = TextToSpeechSynthesizer()
-        # self.tts = TextToSpeechSynthesizer(self.authenticator)
+        credenciales = self.authenticator.authenticate()
+        if not self.authenticator.is_authenticated:
+                logger.error("api_proxy - inicializar - Error de autenticación Google Cloud")
+                raise ValueError("Error de autenticación con Google Cloud")
+            
+        self.tts = TextToSpeechSynthesizer(credenciales=credenciales)
     
     def synthesize_audio(
         self,
+        output_file_name: str,
         text: str,
         output_file: Optional[str] = None,
         **kwargs
@@ -36,12 +41,13 @@ class GoogleCloudTTSClient:
         Returns:
             bytes: Contenido de audio
         """
-        response = self.tts.synthesize(text, **kwargs)
+        return self.tts.synthesize(output_file_name=output_file_name, text=text, **kwargs)
         
-        if output_file:
-            self.tts.synthesize_to_file(text, output_file, **kwargs)
+        #if output_file:
+            # output_file es opcional, si se proporciona se guarda el audio en ese archivo
+            # self.tts.synthesize_to_file(output_file_name=output_file_name, text=text, **kwargs)
         
-        return response.audio_content
+        # return response.audio_content
     
     @property
     def is_authenticated(self) -> bool:

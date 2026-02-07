@@ -16,6 +16,7 @@ class GoogleCloudAuthenticator:
     def __init__(self):
         self.credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
         self.credentials = None
+        self._token = None
         self._client = None
     
     def authenticate(self) -> service_account.Credentials:
@@ -52,18 +53,19 @@ class GoogleCloudAuthenticator:
             # )
 
             self.credentials = service_account.Credentials.from_service_account_file(
-                str(self.credentials_path),
+                self.credentials_path,
                 scopes=['https://www.googleapis.com/auth/cloud-platform']
             )
 
-            # if self.credentials.expired:
-            #     self.credentials.refresh(google.auth.transport.requests.Request())
-            #     self.client = self.credentials.token
-
-            # return self.credentials
+            # con esto solucione la validación siguiente self.credentials.valid que siempre daba false, ahora da true
+            # esto es porque al cargar las credenciales desde el archivo, se obtiene un objeto de credenciales que no tiene un token válido hasta que se refresca. 
+            # Al llamar a refresh(), se obtiene un token válido y se actualiza el estado de las credenciales a válido.
+            self.credentials.refresh(Request())            
+            
             if self.credentials.valid:
                 logger.info(f"Autenticación exitosa. Cuenta: {self.credentials.service_account_email}")
-                self.client = self.credentials.token
+                self._token = self.credentials.token
+                self._client = self.credentials
                 return self.credentials
             else:
                 logger.warning("Las credenciales no son válidas")
@@ -83,6 +85,13 @@ class GoogleCloudAuthenticator:
         
         return None
     
+    def get_client(self):
+        """Obtener cliente de autenticación"""
+        if not self._client:
+            return None
+        else:
+            return self._client
+
     def get_token(self):
         """Obtener token de acceso"""
         if not self.credentials:
@@ -107,4 +116,6 @@ class GoogleCloudAuthenticator:
     @property
     def is_authenticated(self) -> bool:
         """Verifica si está autenticado"""
+        logger.info(f"api-proxy - gcloud_authenticator.py - clinent? {self._client}")
+        logger.info(f"api-proxy - gcloud_authenticator.py - expired? {self.credentials.expired}")
         return self._client is not None and not self.credentials.expired
