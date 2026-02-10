@@ -1,21 +1,10 @@
-# -*- coding: utf-8 -*-
-from docx import Document
-from docx.enum.text import WD_COLOR_INDEX
-import os
-# If you want to pretty-print the XML (add indentation and line breaks),
-# you can use xml.dom.minidom
-import xml.dom.minidom
-
-class Heading1NotFoundException(Exception):
-    """Excepción personalizada para cuando no se encuentra un Heading 1"""
-    pass
 
 def extraer_texto_resaltado(input_path, output_path):
     """
     Extrae texto resaltado en amarillo de un documento Word y lo guarda en un nuevo documento.
     Args:
         input_path (str): Ruta al documento Word de entrada (.docx)
-        output_path (str): Ruta donde se guardará el nuevo documento con el texto extraído
+        output_dir (str): Directorio donde se guardará el nuevo documento con el texto extraído
     """
     try:
         # Cargar el documento
@@ -59,17 +48,25 @@ def extraer_texto_resaltado(input_path, output_path):
                             'indice': len(nota[contador_notas]['cuerpo']) + 1,
                             'texto': texto_resaltado
                         })                                          
-        # la nota esta completa, antes de continuar con el siguiente párrafo, guardamos la nota en el nuevo documento
+        
+        # Guardar las notas en el nuevo documento
         for nota_a_guardar in nota:
             nuevo_doc.add_heading(nota_a_guardar["titulo"], level=1)
             for parrafo in nota_a_guardar["cuerpo"]:
                 nuevo_doc.add_paragraph(f"{parrafo['texto']}")                
+        
+        # Guardar el documento
         nuevo_doc.save(output_path)
-        print(f"¡Proceso completado! Texto extraído guardado en: {output_path}")
+
+        logger.info (f"main.py - extraer_texto_resaltado - 01 - ¡Proceso completado! Texto extraído guardado en: {output_path}")
+        return output_path  # Devolver la ruta del archivo guardado
+        
     except Heading1NotFoundException as e:
-        print(f"Error: {str(e)}")
+        logger.info (f"main.py - extraer_texto_resaltado - 02 - Error: {str(e)}")
+        raise
     except Exception as e:
-        print(f"Error al procesar el documento: {str(e)}")
+        logger.info (f"main.py - extraer_texto_resaltado - 03 - Error al procesar el documento: {str(e)}")
+        raise
 
 def contar_cantidad_de_palabras(texto):
     """
@@ -153,7 +150,29 @@ def convertir_a_formato_ssml(input_path,output_path):
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(ssml_output_pretty_xml)
             
-        print(f"¡SSML generado y guardado en: {output_path}!")
+        logger.info (f"main.py - convertir_a_formato_ssml - 01 - ¡SSML generado y guardado en: {output_path}!")
         return [cantidad_palabras, cantidad_caracteres]
     except Exception as e:
-        print(f"Error al convertir a SSML: {str(e)}")
+        logger.info (f"main.py - convertir_a_formato_ssml - 02 - Error al convertir a SSML: {str(e)}")
+    
+    # creo que esta parte no tiene sentido
+    
+    # Obtener el nombre del archivo del cuerpo de la solicitud
+    # base_url = "http://localhost:5001/"
+    # url = base_url + filename
+    # # filename = request.get_json()['filename']
+    # file_path = os.path.join(SAVE_FOLDER, filename)
+
+    # # Verificar que el archivo existe
+    # if not os.path.exists(file_path):
+    #     return jsonify({'error': 'File not found'}), 404
+
+    # response = requests.post(url)
+
+    # # return jsonify({'message': 'Audio generated successfully', 'filename': filename}), 200
+    # return send_file(file_path, as_attachment=True)
+
+def leer_archivo_ssml(file_path: str) -> str:
+    """Lee archivo SSML/XML y retorna contenido como string"""
+    with open(file_path, 'r') as f:
+        return f.read()

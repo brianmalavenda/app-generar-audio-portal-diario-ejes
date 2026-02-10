@@ -3,13 +3,13 @@ from unittest.mock import Mock, patch, MagicMock
 import io
 
 
-@pytest.fixture
-def mock_credentials():
-    """Mock de credenciales de Google Cloud"""
-    with patch("api_proxy.gcloud_tts.client.GoogleCloudCredentials") as mock:
-        creds = Mock()
-        mock.return_value = creds
-        yield creds
+# @pytest.fixture
+# def mock_credentials():
+#     """Mock de credenciales de Google Cloud"""
+#     with patch("api_proxy.gcloud_tts.client.GoogleCloudCredentials") as mock:
+#         creds = Mock()
+#         mock.return_value = creds
+#         yield creds
 
 @pytest.fixture
 def mock_authenticator():

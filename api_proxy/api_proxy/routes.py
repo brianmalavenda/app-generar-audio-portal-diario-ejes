@@ -32,7 +32,6 @@ def init_routes(app):
             logger.info(f"api_proxy - generar_audio - Tamaño contenido: {len(xml_content)} chars")
             
             # 4. Obtener metadata del form data (NO de request.get_json())
-            # is_long = request.form.get('is_long', 'false').lower() == 'true'
             language_code = request.form.get('language_code', 'es-ES')
             voice_name = request.form.get('voice_name', 'es-ES-Standard-A')
             audio_format = request.form.get('audio_format', 'WAV') # Valores posibles: MP3, WAV, OGG_OPUS, LINEAR16
