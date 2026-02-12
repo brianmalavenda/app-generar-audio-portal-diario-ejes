@@ -12,11 +12,14 @@ RUN apt-get update && apt-get install -y \
 # Directorio de trabajo
 WORKDIR /app
 
-# Copiar requirements primero (para caché eficiente)
-COPY requirements.txt .
+# Copiar archivos de definición de paquete
+COPY pyproject.toml ./
+COPY api_backend/ ./api_backend/
 
-# Instalar dependencias
-RUN pip install --no-cache-dir -r requirements.txt
+# Instalar dependencias usando pyproject.toml
+# --no-deps no es necesario aquí, pero .[dev] instalaría deps de desarrollo si quisieras
+RUN pip uninstall api_proxy -y 2>/dev/null && \
+   pip install --no-cache-dir -e . 2>/dev/null
 
 # Copiar el código de la app
 COPY . .
@@ -29,5 +32,9 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Exponer puerto (FastAPI por defecto en 5000)
 EXPOSE 5000
 
-ENTRYPOINT [ "docker-entrypoint.sh" ]
-CMD ["python", "main.py"]
+# Usar Gunicorn (Producción) en lugar de python main.py
+# Asumiendo que creaste un punto de entrada wsgi.py o usando el módulo
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "api:create_app()"]
+
+# ENTRYPOINT [ "docker-entrypoint.sh" ]
+# CMD ["python", "main.py"]

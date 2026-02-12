@@ -1,0 +1,279 @@
+# INCICAR ENTORNO VIRTUAL DE PYTHON
+python3 -m venv ~/entorno_python
+source ~/entorno_python/bin/activate
+
+## Instalar dependencias
+```
+    pip install python-docx
+    pip install request
+    pip install google-cloud-texttospeech
+```
+o
+```
+    pip install -r requirements.txt 
+```
+
+**Preparar el documento:**
+Asegúrate de que tu documento esté en formato .docx (no .doc)
+Resalta con amarillo el texto que quieres conservar
+
+**Configurar las rutas:**
+Modifica la variable documento_entrada con la ruta a tu documento
+El script guardará el resultado en texto_resaltado.docx (puedes cambiar este nombre)
+
+**Ejecutar el script:**
+```
+python nombre_del_script.py
+```
+
+### ⚠️ Limitaciones y consideraciones:
+Solo funciona con archivos .docx (no con los antiguos .doc)
+Detecta específicamente el color amarillo de resaltado (WD_COLOR_INDEX.YELLOW)
+El texto extraído mantendrá su estructura original en párrafos
+Si no encuentra texto resaltado en amarillo, te lo indicará
+🔧 Posibles mejoras:
+Si necesitas detectar otros colores o formatos adicionales (como subrayado), puedo ayudarte a modificar el script. También puedo ayudarte a crea*r una interfaz gráfica sencilla si prefieres no trabajar con la línea de comandos.
+
+
+## Iniciarlizar nuestro cliente de Google cloud
+
+Una vez inicializada la conexion y autenticacion con gcloud podremos ejecutar el script sin problemas y nos generará de salida un archivo de audio con el nombre que le indicamos en el script.
+
+```
+    gcloud init --console-only
+```
+
+## Generar un texto de formato SSML**
+
+## API
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "x-goog-user-project": project_id,
+        "Content-Type": "application/json; charset=utf-8"
+    }
+    
+    data = {
+        "input": {
+            "ssml": text
+        },
+        "voice": {
+            "languageCode": "es-US", # Esto indica el idioma español
+            # "name": "es-US-Standard-A", # Esto indica la voz específica
+            # "ssmlGender": "FEMALE" # Género de la voz
+        },
+        "audioConfig": {
+            "audioEncoding": "MP3"
+        }
+    }
+
+## Para utilizar el texto directamente en el script
+
+    # TEXT = """<speak>
+    #     <voice name="es-US-Standard-B" gender="MALE">
+    #         <prosody rate="medium" volume="loud">
+    #         <emphasis level="strong">250908LN Protestas masivas en Europa contra Israel: 900 detenidos en Londres</emphasis>
+    #         </prosody>
+    #     </voice>
+        
+    #     <break time="2s"/>
+        
+    #     <voice name="es-US-Standard-A" gender="FEMALE">
+    #         <prosody rate="fast" volume="medium">
+    #         La policía metropolitana de Londres (MET) indicó que 857 personas fueron detenidas en cumplimiento de la ley antiterrorista, después de una protesta organizada el sábado en apoyo de una organización proscrita. Además, otras 33 personas fueron detenidas acusadas de atacar a agentes de policía y por otros delitos contra el orden público.
+    #         </prosody>
+    #     </voice>
+    #     </speak>"""
+    # se utilizan 3 comillas dobles para permitir saltos de línea y comillas simples dentro del texto
+
+
+# PASOS
+
+1. Importar el archivo de texto con subrayado amarillo
+2. Procesar y generar archivo de texto plano que tenga por contenido solo lo subrayado del archivo fuente
+3. Procesarlo a SSML format para generar de esta manera una "forma" de lectura
+4. Sintetizamos el archivo SSML y lo exportamos en un audio en formato ogg 
+5. Para casos donde el archivo sea pesado, ver si esto es por cantidad de caracteres o tamaño del archivo, generar varios procesos a la vez de traducción de audio. Para esto hay que:
+   
+   1. dividir el archivo en formato SSML en sub-archivos
+   2. levantar contenedores de docker por cada sub-proceso de sintetizacion en gcloud con text-to-speech asi se procesan en paralelo
+   3. tengo que tener un script en paralelo corriendo para que cuando terminen de procesar el archivo en todas sus secciones y se guarden en una carpeta, el proceso anterior envie un aviso a esta API que se encargue de "unir" todo el audio en un solo audio para exportar (formato .ogg )
+
+
+Notas: 
+   1. El título tiene que poder tomarse del archivo subrayado aunque este sin subrayar
+   2. El código del principio no es necesario que esté o hay que omitirlo de la lectura
+
+
+
+## 250912
+
+### ver
+1. El diario procesado debe poder tomar los títulos de las notas en formato Haeding 1 y ponerlos al principio de la nota
+2. Si no tiene título en formato Heading 1 debe indicar un error en el momento de procesar el archivo indicando que el formato del diario no es el correcto. "Los títulos de cada nota deben comenzar por un título que tenga formato Heading 1"
+
+### hicimos
+1. Generamos una lista de objetos nota que nos ayudo a estructurar las propiedades de cada nota que componen el bodoque
+2. Distinguimos cada título en formato Heading 1 para diferenciar una nota de otra y poder tener una definicion clara de comienzo y fin de cada una
+3. Guardamos el contenido en el archivo iterando por la lista y nos aseguramos que se respeto el formato de titulo Heading 1 y el cuerpo de la nota que sea solo del texto resaltado
+
+## 250915
+
+### hicimos
+1. El título en formato Heading 1 en el archivo de resultado se repite en la primer oracion del cuerpo de la nota, revisar para que no pase
+2. Post procesamiento y resultado final hay que reprocesarlo para convertirlo en formato SSML.
+   1. Encabezadao: <?xml version="1.0"?>
+        <speak>
+   2. Título: <voice name="es-US-Standard-B" gender="MALE">
+        <prosody rate="medium" volume="loud">
+        <emphasis level="strong">
+   3. Cuerpo: <voice name="es-US-Standard-A" gender="FEMALE">
+        <prosody rate="medium" volume="medium">
+   4. Cierre final: <speak>
+3. ver cantidad de caracteres resultante, cantidad de palabras, tiempo que tarda en procesar el archivo y re-evaluar viabilidad del proyecto
+4. Hay que crear una estructura de carpetas que sea coincidente con la arquitectura de la app. 
+   1. api
+   2. back
+   3. front
+5. Una vez que queda separada la api-gateway del back y del front, considero esta parte como otra app. Esto implica que tiene su propias variables de entorno, dependencias, file system, etc. Esto se traducirá en un contenedor docker que simulará otro servidor. Para eso primero creamos un dockerfile para crear la imagen de la app. Luego con un archivo docker-compose.yml podemos orquestar los contenedores y dejarlo listo para que al levantarlo podamos desde afuera acceder a la API desde http://localhost:8000
+
+
+## GOOGLE CLOUD BUCKET
+
+https://console.cloud.google.com/storage/browser/audios-text-to-speech-01;tab=permissions?forceOnBucketsSortingFiltering=true&hl=es-419&project=rugged-feat-471218-r8&prefix=&forceOnObjectsSortingFiltering=false
+
+Hicimos de acceso público el bucket ya que contiene solo los audios sintetizados y la metadata. Tendríamos que evaluar si hay riesgos de seguridad haciendo esto.
+
+Esta arquitectura
+Google Cloud Storage (Bucket) → URL Pública/Signed URL → Frontend (Descarga directa)
+
+quizas lo más seguro sea generar una URL temporal firmada (Signed URLs) para descargar los audios. Esto deberíamos probar si sirve para descargar los audios y para poder utilizarlos como fuente de lectura al momento de querer reproducirlos desde el navegador
+
+def generate_signed_url(bucket_name, audio_filename, expiration_hours=24):
+    """Genera una URL temporal firmada"""
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(f"audios/{audio_filename}")
+    
+    # Verificar que existe
+    if not blob.exists():
+        return None
+    
+    # Generar URL firmada por 24 horas
+    signed_url = blob.generate_signed_url(
+        expiration=datetime.timedelta(hours=expiration_hours),
+        method="GET"
+    )
+    
+    return signed_url
+
+# Uso
+signed_url = generate_signed_url("audios-text-to-speech-01", audio_filename)
+
+# Acceso publico y configuracion de CORS
+
+Es necesario aplicar esta configuración porque desde el navegador Google Cloud no te deja descargar directamente el audio por políticas de CORS.
+
+gsutil cors set google_cors.json gs://audios-text-to-speech-01 
+gsutil cors get gs://audios-text-to-speech-01 
+
+
+
+## EJECUTAR CONTENEDORES
+
+sudo docker build -t api-proxy .
+sudo docker build -t backend-python-images .
+sudo docker build -t frontend-images .
+
+<!-- creamos la red bridge para comunicarse entre contenedores -->
+docker network create tts-network
+
+docker run -it -p 5001:5000 -v $(pwd)/shared:/app/shared-files --name api-proxy-container api-proxy:latest
+
+docker run -it -p 5001:5000 --name api-proxy-container api-proxy:latest
+
+docker run -it -p 5000:5000 -v $(pwd)/shared:/app/shared-files --name backend-container  --network tts-network backend:latest
+docker run -it -p 3000:3000 --name frontend-container frontend:latest
+
+<!-- entrar dentro de mi contenedor -->
+docker exec -it backend-container-api /bin/bash
+<!-- buscar un archivo -->
+docker exec nombre_de_tu_contenedor find / -name "*.txt" 2>/dev/null
+
+docker volumen ls
+
+
+docker stop $(docker ps -aq) && docker rm $(docker ps -aq) && docker rmi $(docker images -q) 
+&& rmdir shared
+
+docker build -t frontend:latest ./frontend
+docker build -t backend:latest ./backend
+docker build -t api-proxy:latest ./api-proxy
+
+# En tu servidor, en la carpeta del proyecto
+### deploy.sh
+
+docker swarm init
+docker secret create google_credentials cred/google-credentials.json
+docker stack deploy -c docker-compose.yml tu-app
+
+# En tu servidor, una sola vez:
+cd ~/Repositorio/app-generar-audio-portal-diario-ejes
+docker swarm init
+docker secret create google_credentials api/cred/google-credentials.json
+docker stack deploy -c docker-compose.yml audio-app
+
+
+# Generar audio largo
+
+curl -X POST -F "file=@procesado_test_03_corto.docx" http://127.0.0.1:5001/api_proxy/sintetizar_audio --output prueba_01_corto.ogg
+
+# Generar audio corto
+
+curl -X POST -F "file=@procesado_test_03_largo.docx" http://127.0.0.1:5001/api_proxy/sintetizar_audio --output prueba_01_largo.ogg
+
+https://console.cloud.google.com/storage/browser/audios-text-to-speech-01;tab=objects?project=rugged-feat-471218-r8&prefix=&forceOnObjectsSortingFiltering=false
+
+# LOGS de los contenedores activos
+docker-compose logs -f
+
+docker logs -f backend-container
+
+# DESCARGAR AUDIO
+
+Es necesario que guardemos en el servidor el audio ya que para compartirlo por telegram o luego por whatsapp debemos compartirlo desde el servidor.
+
+### Bot de telegram
+Done! Congratulations on your new bot. You will find it at t.me/PortalDiariosBot. You can now add a description, about section and profile picture for your bot, see /help for a list of commands. By the way, when you've finished creating your cool bot, ping our Bot Support if you want a better username for it. Just make sure the bot is fully operational before you do this.
+
+Use this token to access the HTTP API:
+8446173738:AAE6wfhkh3oEx0YheU99VolGF3kY10prZTg
+Keep your token secure and store it safely, it can be used by anyone to control your bot.
+
+For a description of the Bot API, see this page: https://core.telegram.org/bots/api
+
+
+npm install node-telegram-bot-api
+npm install -D @types/node-telegram-bot-api
+
+
+Aquí está la secuencia que funcionó para mí después de luchar durante varias horas:
+
+Supongamos que el nombre del bot es mi_bot.
+
+1- Agrega el bot al grupo.
+Vaya al grupo, haga clic en el nombre del grupo, haga clic en Agregar miembros, en el cuadro de búsqueda busque su bot de esta manera: @my_bot, seleccione su bot y haga clic en agregar.
+
+2- Envía un mensaje ficticio al bot.
+Puedes utilizar este ejemplo: /my_id @my_bot
+(Probé algunos mensajes, no todos funcionan. El ejemplo anterior funciona bien. Quizás el mensaje debería comenzar con /)
+
+3- Vaya a la siguiente URL: https://api.telegram.org/botXXX:YYYY/getUpdates
+Reemplaza XXX:YYYY con tu token de bot
+
+4- Busque "chat":{"id":-zzzzzzzzzz,
+-zzzzzzzzzz es tu ID de chat (con el signo negativo).
+
+### Integración
+
+Frontend → API Gateway (nginx) → { Backend, Telegram-Service }

@@ -20,7 +20,7 @@ COPY secrets/ ./secrets/
 # Instalar el paquete en modo editable para que los cambios se reflejen inmediatamente
 # RUN pip install --no-cache-dir -e . 
 RUN pip uninstall api_proxy -y 2>/dev/null && \
-    pip install --no-cache-dir -e . 2>/dev/null
+   pip install --no-cache-dir -e . 2>/dev/null
 
 # Crear directorios necesarios
 # RUN mkdir -p /app/shared-files /app/secrets && \

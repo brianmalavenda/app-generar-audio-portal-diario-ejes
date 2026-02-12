@@ -19,9 +19,14 @@ def create_app(config_name='development'):
     app.config['AUDIO_FOLDER'] = os.getenv('AUDIO_FOLDER', '/app/shared-files/audio/')
     app.config['SAVE_FOLDER'] = os.path.join(os.getcwd(), "shared-files", "diario_pintado")  # ruta absoluta dentro del contenedor
 
-    # Importar y registrar rutas
-    from . import routes
-    routes.init_routes(app)    
+    # Registrar blueprints de rutas
+    from .routes import main_bp
+    app.register_blueprint(main_bp)
+
+    # Registrar blueprint de Telegram
+    from services.telegram import telegram_bp
+    app.register_blueprint(telegram_bp)
+
     return app
 
 # Para backwards compatibility (si alguien hace "from api_proxy import app")
