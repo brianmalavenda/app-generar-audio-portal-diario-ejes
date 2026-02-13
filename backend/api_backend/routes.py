@@ -1,9 +1,8 @@
 from flask import Blueprint, request, jsonify, current_app, send_file
 import logging
 import io
-from .gcloud_tts.client import GoogleCloudTTSClient
-from .utils.process_files import leer_docx_completo, extraer_texto_resaltado, convertir_a_formato_ssml, tamanio_archivo_en_megabytes
-from .utils.validate import validar_procesar
+import sys
+from .utils.process_file import extraer_texto_resaltado, convertir_a_formato_ssml, tamanio_archivo_en_megabytes #  leer_docx_completo, 
 import logging
 
 # Configurar logging para que vaya a stdout (se captura con docker logs)

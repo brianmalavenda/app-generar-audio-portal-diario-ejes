@@ -11,5 +11,5 @@ mkdir -p /app/shared-files/audio
 echo "Directorios creados en: /app/shared-files/"
 ls -la /app/shared-files/
 
-# Ejecutar el comando principal
+# Ejecutar el comando principal CMD del Dockerfile
 exec "$@"

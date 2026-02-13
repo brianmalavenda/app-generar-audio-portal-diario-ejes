@@ -32,9 +32,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Exponer puerto (FastAPI por defecto en 5000)
 EXPOSE 5000
 
+ENTRYPOINT [ "docker-entrypoint.sh" ]
 # Usar Gunicorn (Producción) en lugar de python main.py
 # Asumiendo que creaste un punto de entrada wsgi.py o usando el módulo
-CMD ["gunicorn", "-b", "0.0.0.0:5000", "api:create_app()"]
-
-# ENTRYPOINT [ "docker-entrypoint.sh" ]
-# CMD ["python", "main.py"]
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "__main__:app"]
