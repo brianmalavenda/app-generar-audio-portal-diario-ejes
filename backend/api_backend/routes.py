@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 main_bp = Blueprint('main', __name__)        
 
 @main_bp.route('/api/health', methods=['GET'])
+@description("Endpoint para verificar el estado de los servicios")
 def healthcheck():
     """Endpoint para verificar el estado de los servicios"""
     status = {
@@ -50,6 +51,7 @@ def healthcheck():
     return jsonify(status), 200
 
 @main_bp.route('/api/archivos_procesados')
+@description("Endpoint para listar los archivos procesados en el directorio compartido. Archivo procesado es el que tiene el texto resaltado extraído y guardado en formato docx.")
 def listar_archivos_procesados():
     import glob
     archivos = glob.glob("/app/shared-files/diario_procesado/*.docx")
@@ -62,6 +64,7 @@ def listar_archivos_procesados():
     })
 
 @main_bp.route('/audio/<filename>')
+@description("Endpoint para servir archivos de audio. Utilizado para reproducir el audio generado en el frontend. El archivo debe existir en el directorio de audio configurado.")
 def serve_audio(filename):
     try:        
         # Verificar si el archivo existe
@@ -78,6 +81,7 @@ def serve_audio(filename):
         return {"error": str(e)}, 500
 
 @main_bp.route('/api/upload', methods=['POST'])
+@description("Endpoint para subir un archivo, procesarlo y generar un SSML. El archivo se guarda en el directorio compartido, se extrae el texto resaltado, se convierte a formato SSML y se devuelve información sobre el proceso.")
 def upload_file():
     
     if 'file' not in request.files:
@@ -103,22 +107,27 @@ def upload_file():
     extraer_texto_resaltado(file_path, doc_resaltado_path)
     logger.info("main.py - upload_file - 03 - Documento procesado con texto resaltado guardado en: " + doc_resaltado_path)     
 
-    doc_ssml = "ssml_" + filename + ".xml"
-    doc_ssml_path = os.path.join('/app/shared-files/diario_ssml/', doc_ssml)
-    palabras_caracteres = convertir_a_formato_ssml(doc_resaltado_path, doc_ssml_path)
-    logger.info("main.py - upload_file - 03 - Documento xml" + doc_ssml)     
-    logger.info("main.py - upload_file - 03 - Documento procesado con texto resaltado guardado en: " + doc_ssml_path)     
-    
-    tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(doc_ssml_path)
+    cantidad_palabras = contar_cantidad_de_palabras(doc_resaltado_path)
+    cantidad_catacteres = contar_cantidad_de_caracteres(doc_resaltado_path)
 
-    logger.info("main.py - upload_file - 04 - Documento convertido a formato ssml y guardado en: " + doc_ssml_path)     
 
-    response_data = {"status": "OK", "Cantidad de palabras en SSML:": palabras_caracteres[0], "Cantidad de caracteres en SSML": palabras_caracteres[1], "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo }
+    # Esto lo dejamos para la 1er iteración
+
+    # doc_ssml = "ssml_" + filename + ".xml"
+    # doc_ssml_path = os.path.join('/app/shared-files/diario_ssml/', doc_ssml)
+    # palabras_caracteres = convertir_a_formato_ssml(doc_resaltado_path, doc_ssml_path)
+    # logger.info("main.py - upload_file - 03 - Documento xml" + doc_ssml)     
+    # logger.info("main.py - upload_file - 03 - Documento procesado con texto resaltado guardado en: " + doc_ssml_path)     
+    # tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(doc_ssml_path)
+    # logger.info("main.py - upload_file - 04 - Documento convertido a formato ssml y guardado en: " + doc_ssml_path)     
+
+    response_data = {"status": "OK", "Cantidad de palabras en SSML:": cantidad_palabras, "Cantidad de caracteres en SSML": cantidad_catacteres, "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo }
     logger.info (f"main.py - upload_file - 05 - {response_data}")
     
-    return jsonify({"palabras:": palabras_caracteres[0], "caracteres": palabras_caracteres[1], "tamanio" : tamanio_megabytes_archivo }), 200
+    return jsonify({"palabras:": cantidad_palabras, "caracteres": cantidad_catacteres, "tamanio" : tamanio_megabytes_archivo }), 200
 
 @main_bp.route('/api/generar_audio', methods=['GET'])
+@description("Endpoint para generar un archivo de audio a partir de un archivo SSML previamente procesado. El nombre del archivo SSML se recibe como parámetro, se lee el contenido, se envía a la API proxy para generar el audio, y luego se convierte a MP3 si es necesario. El audio generado se guarda en el directorio configurado y se devuelve información sobre el proceso.")
 # @secure_endpoint # Este endpoint solo puede ser llamado desde el frontend
 def generar_audio():
     # no recibo un archivo porque el archivo ya fue subido previamente y procesado
@@ -128,6 +137,10 @@ def generar_audio():
 
     ssml_filename = "ssml_" + filename.split('.')[0] + ".xml"
     file_path = os.path.join('/app/shared-files/diario_ssml', ssml_filename)
+    # por ahora vamos ausar una sola voz y lenguaje
+    # 1ra iteracón: "splitear" el ssml_filename por cada título de noticia y por cada cuerpo de noticia. El título tendra una configuración especial de voz y el cuerpo otra.
+    # 2da iteración: usaremos esto para generar audios en el EDM por lo tanto incluiremos una configuración especial para volanta y copete. Ligeramente distanta.
+    # esto dará la impresión de que es un noticiero leyendo el diario o un "postcast" diario.
 
     logging.info(f"main.py - generar_audio - 01 - Nombre del archivo SSML: {ssml_filename}")
 

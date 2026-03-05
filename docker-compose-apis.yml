@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  backend:
+    image: backend
+    container_name: backend-container
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./shared:/app/shared-files
+    networks:
+      - tts-network
+
+  api-proxy:
+    image: api-proxy
+    container_name: api-proxy-container
+    ports:
+      - "5001:5000" # puerto host:puerto contenedor
+    # volumes:
+    #   - ./shared:/app/shared-files
+    volumes:
+      - ./shared:/app/shared-files
+      - ./secrets:/app/secrets:ro  # :ro = solo lectura
+    environment:
+      # Variable apunta al archivo MONTADO via volumen
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/gcloud_credentials.json
+    networks:
+      - tts-network      
+    depends_on:
+      - backend
+
+networks:
+  tts-network:
+    driver: bridge
