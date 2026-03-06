@@ -11,7 +11,7 @@ log_service() {
 
 # Monitorear todos los servicios
 log_service "backend-container" "\033[1;34m"
-log_service "api-proxy-container" "\033[1;32m" 
+log_service "api_proxy-container" "\033[1;32m" 
 log_service "frontend-container" "\033[1;35m"
 
 # Esperar Ctrl+C

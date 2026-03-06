@@ -4,7 +4,7 @@
 echo "Construyendo imágenes..."
 docker build -t frontend ./frontend
 docker build -t backend ./backend
-docker build -t api-proxy ./api_proxy
+docker build -t api_proxy ./api_proxy
 
 # 1. Inicializar swarm (si no está inicializado)
 if ! docker node ls > /dev/null 2>&1; then

@@ -14,25 +14,21 @@ WORKDIR /app
 # Copiar TODO el proyecto primero (necesario para pip install -e .)
 # COPY . .
 COPY pyproject.toml README.md ./
+
+RUN pip install -e .
+
 COPY api_proxy/ ./api_proxy/
 COPY secrets/ ./secrets/
 
+COPY docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
+
 # Instalar el paquete en modo editable para que los cambios se reflejen inmediatamente
 # RUN pip install --no-cache-dir -e . 
-RUN pip uninstall api_proxy -y 2>/dev/null && \
-   pip install --no-cache-dir -e . 2>/dev/null
+# RUN pip uninstall api_proxy -y 2>/dev/null && pip install --no-cache-dir -e . 2>/dev/null
 
 # Crear directorios necesarios
 # RUN mkdir -p /app/shared-files /app/secrets && \
-RUN mkdir -p /app/shared-files && \
-    chmod 700 /app/secrets && \
-    chmod 600 /app/secrets/* && \
-    chmod 644 /app/secrets/gcloud_credentials.json
-
-# Variable de entorno para credenciales
-ARG GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/gcloud_credentials.json
-ENV GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
-
 # Crear usuario no-root
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app && \
@@ -43,6 +39,10 @@ USER appuser
 EXPOSE 5000
 
 # Ejecutar usando el entry point del paquete instalado
+
+ENTRYPOINT ["./docker-entrypoint.sh"]
+
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "api_proxy.__main__:app"]
 # CMD ["python", "-m", "api_proxy"]
-ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["api-proxy"]
+# CMD ["api_proxy"]
+# requiere que este instalado el paquete api_proxy, lo cual se hace con pip install -e . en el Dockerfile, pero eso no funciona bien con el volumen montado, porque el código del host sobrescribe el código del contenedor, y si el paquete no estaba instalado previamente, no encuentra el módulo api_proxy. Por eso es mejor usar python -m api_proxy, que busca el módulo en el PYTHONPATH, que incluye el directorio actual.

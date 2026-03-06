@@ -11,9 +11,9 @@ services:
     networks:
       - tts-network
 
-  api-proxy:
-    image: api-proxy
-    container_name: api-proxy-container
+  api_proxy:
+    image: api_proxy
+    container_name: api_proxy-container
     ports:
       - "5001:5000" # puerto host:puerto contenedor
     # volumes:

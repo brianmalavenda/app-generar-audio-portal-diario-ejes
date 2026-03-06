@@ -1,9 +1,9 @@
-from flask import Blueprint, request, jsonify, current_app, send_file
+from flask import Blueprint, jsonify, current_app, send_file
+import requests
 import logging
 import io
 import sys
 from .utils.process_file import extraer_texto_resaltado, convertir_a_formato_ssml, tamanio_archivo_en_megabytes #  leer_docx_completo, 
-import logging
 
 # Configurar logging para que vaya a stdout (se captura con docker logs)
 logging.basicConfig(
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 main_bp = Blueprint('main', __name__)        
 
 @main_bp.route('/api/health', methods=['GET'])
-@description("Endpoint para verificar el estado de los servicios")
+#solo en fastApi @description("Endpoint para verificar el estado de los servicios") 
 def healthcheck():
     """Endpoint para verificar el estado de los servicios"""
     status = {
@@ -28,8 +28,8 @@ def healthcheck():
     
     # En Docker Compose, usar el nombre del servicio y puerto INTERNO
     possible_urls = [
-        "http://api-proxy:5000/api_proxy/health",  # ✅ CORRECTO - nombre servicio + puerto interno
-        "http://api-proxy-container:5000/api_proxy/health",  # ✅ nombre contenedor
+        "http://api_proxy:5000/api_proxy/health",  # ✅ CORRECTO - nombre servicio + puerto interno
+        "http://api_proxy-container:5000/api_proxy/health",  # ✅ nombre contenedor
     ]
     
     status["connection_attempts"] = {}
@@ -51,20 +51,20 @@ def healthcheck():
     return jsonify(status), 200
 
 @main_bp.route('/api/archivos_procesados')
-@description("Endpoint para listar los archivos procesados en el directorio compartido. Archivo procesado es el que tiene el texto resaltado extraído y guardado en formato docx.")
+#solo en fastApi @description("Endpoint para listar los archivos procesados en el directorio compartido. Archivo procesado es el que tiene el texto resaltado extraído y guardado en formato docx.")
 def listar_archivos_procesados():
     import glob
-    archivos = glob.glob("/app/shared-files/diario_procesado/*.docx")
+    archivos = glob.glob("/shared-files/diario_procesado/*.docx")
     archivos_lista = [os.path.basename(archivo) for archivo in archivos]
     
     return jsonify({
-        'directorio': os.path.abspath("/app/shared-files/diario_procesado/"),
+        'directorio': os.path.abspath("/shared-files/diario_procesado/"),
         'archivos': archivos_lista,
         'total': len(archivos_lista)
     })
 
 @main_bp.route('/audio/<filename>')
-@description("Endpoint para servir archivos de audio. Utilizado para reproducir el audio generado en el frontend. El archivo debe existir en el directorio de audio configurado.")
+#solo en fastApi @description("Endpoint para servir archivos de audio. Utilizado para reproducir el audio generado en el frontend. El archivo debe existir en el directorio de audio configurado.")
 def serve_audio(filename):
     try:        
         # Verificar si el archivo existe
@@ -81,7 +81,7 @@ def serve_audio(filename):
         return {"error": str(e)}, 500
 
 @main_bp.route('/api/upload', methods=['POST'])
-@description("Endpoint para subir un archivo, procesarlo y generar un SSML. El archivo se guarda en el directorio compartido, se extrae el texto resaltado, se convierte a formato SSML y se devuelve información sobre el proceso.")
+#solo en fastApi @description("Endpoint para subir un archivo, procesarlo y generar un SSML. El archivo se guarda en el directorio compartido, se extrae el texto resaltado, se convierte a formato SSML y se devuelve información sobre el proceso.")
 def upload_file():
     
     if 'file' not in request.files:
@@ -103,7 +103,7 @@ def upload_file():
     filename =file.filename.split('.')[0]
 
     doc_resaltado = "p_" + filename + ".docx"
-    doc_resaltado_path = os.path.join('/app/shared-files/diario_procesado/', doc_resaltado)
+    doc_resaltado_path = os.path.join('/shared-files/diario_procesado/', doc_resaltado)
     extraer_texto_resaltado(file_path, doc_resaltado_path)
     logger.info("main.py - upload_file - 03 - Documento procesado con texto resaltado guardado en: " + doc_resaltado_path)     
 
@@ -127,7 +127,7 @@ def upload_file():
     return jsonify({"palabras:": cantidad_palabras, "caracteres": cantidad_catacteres, "tamanio" : tamanio_megabytes_archivo }), 200
 
 @main_bp.route('/api/generar_audio', methods=['GET'])
-@description("Endpoint para generar un archivo de audio a partir de un archivo SSML previamente procesado. El nombre del archivo SSML se recibe como parámetro, se lee el contenido, se envía a la API proxy para generar el audio, y luego se convierte a MP3 si es necesario. El audio generado se guarda en el directorio configurado y se devuelve información sobre el proceso.")
+#solo en fastApi @description("Endpoint para generar un archivo de audio a partir de un archivo SSML previamente procesado. El nombre del archivo SSML se recibe como parámetro, se lee el contenido, se envía a la API proxy para generar el audio, y luego se convierte a MP3 si es necesario. El audio generado se guarda en el directorio configurado y se devuelve información sobre el proceso.")
 # @secure_endpoint # Este endpoint solo puede ser llamado desde el frontend
 def generar_audio():
     # no recibo un archivo porque el archivo ya fue subido previamente y procesado
@@ -135,8 +135,10 @@ def generar_audio():
     if not filename:
         return jsonify({'error': 'Filename parameter is required'}), 400
 
-    ssml_filename = "ssml_" + filename.split('.')[0] + ".xml"
-    file_path = os.path.join('/app/shared-files/diario_ssml', ssml_filename)
+    # ssml_filename = "ssml_" + filename.split('.')[0] + ".xml"
+    # file_path = os.path.join('/shared-files/diario_ssml', ssml_filename)
+    ssml_filename = "p" + filename.split('.')[0] + ".docx"
+    file_path = os.path.join('/shared-files/diario_procesado', ssml_filename)
     # por ahora vamos ausar una sola voz y lenguaje
     # 1ra iteracón: "splitear" el ssml_filename por cada título de noticia y por cada cuerpo de noticia. El título tendra una configuración especial de voz y el cuerpo otra.
     # 2da iteración: usaremos esto para generar audios en el EDM por lo tanto incluiremos una configuración especial para volanta y copete. Ligeramente distanta.
@@ -161,7 +163,7 @@ def generar_audio():
         'audio_format': 'WAV' if is_long else 'MP3' # si es largo uso WAV
     }
 
-    response = requests.post('http://api-proxy:5000/api_proxy/generar_audio', files=files, data=data, timeout=30)
+    response = requests.post('http://api_proxy:5000/api_proxy/generar_audio', files=files, data=data, timeout=30)
 
     if response.status_code == 200:
         try:

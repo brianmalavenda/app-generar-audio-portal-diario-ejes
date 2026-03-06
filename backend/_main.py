@@ -49,8 +49,8 @@ def healthcheck():
     
     # En Docker Compose, usar el nombre del servicio y puerto INTERNO
     possible_urls = [
-        "http://api-proxy:5000/api_proxy/health",  # ✅ CORRECTO - nombre servicio + puerto interno
-        "http://api-proxy-container:5000/api_proxy/health",  # ✅ nombre contenedor
+        "http://api_proxy:5000/api_proxy/health",  # ✅ CORRECTO - nombre servicio + puerto interno
+        "http://api_proxy-container:5000/api_proxy/health",  # ✅ nombre contenedor
     ]
     
     status["connection_attempts"] = {}

@@ -19,8 +19,8 @@ command_exists() {
 
 # Verificar que estamos en el directorio correcto
 check_directory() {
-    if [[ ! -f "docker-compose.yml" ]]; then
-        print_color "Error: No se encuentra docker-compose.yml en el directorio actual" "$RED"
+    if [[ ! -f "docker-compose-apis.yml" ]]; then
+        print_color "Error: No se encuentra docker-compose-apis.yml en el directorio actual" "$RED"
         print_color "Ejecuta este script desde la raíz de tu proyecto" "$YELLOW"
         exit 1
     fi
@@ -39,7 +39,7 @@ clean_swarm() {
     fi
     
     # Eliminar servicios individuales por si existen
-    for service in mi-app_frontend mi-app_backend mi-app_api-proxy; do
+    for service in mi-app_frontend mi-app_backend mi-app_api_proxy; do
         if docker service ls | grep -q "$service"; then
             print_color "Eliminando servicio $service..." "$YELLOW"
             docker service rm "$service"
@@ -54,14 +54,12 @@ clean_containers() {
     
     # Detener y eliminar contenedores relacionados con la app
     print_color "Deteniendo contenedores..." "$YELLOW"
-    docker stop $(docker ps -aq --filter "name=api-proxy-container") 2>/dev/null || true
+    docker stop $(docker ps -aq --filter "name=api_proxy-container") 2>/dev/null || true
     docker stop $(docker ps -aq --filter "name=backend-container") 2>/dev/null || true
-    docker stop $(docker ps -aq --filter "name=frontend-container") 2>/dev/null || true
     
     print_color "Eliminando contenedores..." "$YELLOW"
-    docker rm $(docker ps -aq --filter "name=api-proxy-container") 2>/dev/null || true
+    docker rm $(docker ps -aq --filter "name=api_proxy-container") 2>/dev/null || true
     docker rm $(docker ps -aq --filter "name=backend-container") 2>/dev/null || true
-    docker rm $(docker ps -aq --filter "name=frontend-container") 2>/dev/null || true
     
     # Eliminar todos los contenedores detenidos
     docker container prune -f
@@ -80,7 +78,7 @@ clean_images() {
     # echo
     # if [[ $REPLY =~ ^[Yy]$ ]]; then
     #     print_color "Eliminando imágenes de la aplicación..." "$YELLOW"
-    #     docker rmi api-proxy:latest 2>/dev/null || true
+    #     docker rmi api_proxy:latest 2>/dev/null || true
     #     docker rmi backend:latest 2>/dev/null || true
     #     docker rmi frontend:latest 2>/dev/null || true
     # fi
@@ -119,19 +117,14 @@ clean_volumes() {
 rebuild_images() {
     print_color "=== Reconstruyendo imágenes ===" "$BLUE"
     
-    if [[ -d "api-proxy" ]]; then
-        print_color "Construyendo api-proxy..." "$YELLOW"
-        docker build --no-cache -t api-proxy:latest ./api-proxy
+    if [[ -d "api_proxy" ]]; then
+        print_color "Construyendo api_proxy..." "$YELLOW"
+        docker build --no-cache -t api_proxy:latest ./api_proxy
     fi
     
     if [[ -d "backend" ]]; then
         print_color "Construyendo backend..." "$YELLOW"
         docker build --no-cache -t backend:latest ./backend
-    fiy
-    
-    if [[ -d "frontend" ]]; then
-        print_color "Construyendo frontend..." "$YELLOW"
-        docker build --no-cache -t frontend:latest ./frontend
     fi
 }
 
@@ -149,7 +142,7 @@ check_system() {
     docker network ls
     
     print_color "Imágenes:" "$YELLOW"
-    docker images | grep -E "(api-proxy|backend|frontend)"
+    docker images | grep -E "(api_proxy|backend|frontend)"
 }
 
 # Desplegar con docker-compose
@@ -157,8 +150,7 @@ deploy_compose() {
     print_color "=== Desplegando con Docker Compose ===" "$BLUE"
     
     print_color "Ejecutando docker-compose up..." "$YELLOW"
-    # docker-compose -f docker-compose-apis.yml up -d
-    docker-compose up -d
+    docker-compose -f docker-compose-apis.yml up -d
     # docker stack deploy -c docker-compose.yml mi-app
     
     print_color "Esperando que los servicios inicien..." "$YELLOW"
@@ -175,11 +167,8 @@ test_services() {
     print_color "Probando backend (puerto 5000)..." "$YELLOW"
     curl -f http://127.0.0.1:5000/api/health || print_color "Backend no responde" "$RED"
     
-    print_color "Probando api-proxy (puerto 5001)..." "$YELLOW"
+    print_color "Probando api_proxy (puerto 5001)..." "$YELLOW"
     curl -f http://127.0.0.1:5001/api_proxy/health || print_color "API Proxy no responde" "$RED"
-    
-    print_color "Probando frontend (puerto 3000)..." "$YELLOW"
-    curl -f http://127.0.0.1:3000 || print_color "Frontend no responde" "$RED"
 }
 
 # Menú principal
