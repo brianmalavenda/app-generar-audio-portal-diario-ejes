@@ -1,3 +1,23 @@
+from docx import Document
+from docx.enum.text import WD_COLOR_INDEX
+import os
+import sys
+# If you want to pretty-print the XML (add indentation and line breaks),
+# you can use xml.dom.minidom
+import xml.dom.minidom
+
+import logging
+# Configurar logging para que vaya a stdout (se captura con docker logs)
+logging.basicConfig(
+    level=logging.DEBUG,  # Nivel de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger(__name__)
+
+class Heading1NotFoundException(Exception):
+    """Excepción personalizada para cuando no se encuentra un Heading 1"""
+    pass
 
 def extraer_texto_resaltado(input_path, output_path):
     """
@@ -56,6 +76,7 @@ def extraer_texto_resaltado(input_path, output_path):
                 nuevo_doc.add_paragraph(f"{parrafo['texto']}")                
         
         # Guardar el documento
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         nuevo_doc.save(output_path)
 
         logger.info (f"main.py - extraer_texto_resaltado - 01 - ¡Proceso completado! Texto extraído guardado en: {output_path}")

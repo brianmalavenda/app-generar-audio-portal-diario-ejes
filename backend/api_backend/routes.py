@@ -1,9 +1,12 @@
-from flask import Blueprint, jsonify, current_app, send_file
+from flask import Blueprint, jsonify, current_app, send_file, request, session
+from werkzeug.utils import secure_filename
+import uuid
 import requests
 import logging
 import io
+import os
 import sys
-from .utils.process_file import extraer_texto_resaltado, convertir_a_formato_ssml, tamanio_archivo_en_megabytes #  leer_docx_completo, 
+from .utils.process_file import extraer_texto_resaltado, convertir_a_formato_ssml, tamanio_archivo_en_megabytes, contar_cantidad_de_palabras, contar_cantidad_de_caracteres
 
 # Configurar logging para que vaya a stdout (se captura con docker logs)
 logging.basicConfig(
@@ -54,11 +57,11 @@ def healthcheck():
 #solo en fastApi @description("Endpoint para listar los archivos procesados en el directorio compartido. Archivo procesado es el que tiene el texto resaltado extraído y guardado en formato docx.")
 def listar_archivos_procesados():
     import glob
-    archivos = glob.glob("/shared-files/diario_procesado/*.docx")
+    archivos = glob.glob("/app/shared-files/diario_procesado/*.docx")
     archivos_lista = [os.path.basename(archivo) for archivo in archivos]
     
     return jsonify({
-        'directorio': os.path.abspath("/shared-files/diario_procesado/"),
+        'directorio': os.path.abspath("/app/shared-files/diario_procesado/"),
         'archivos': archivos_lista,
         'total': len(archivos_lista)
     })
@@ -68,11 +71,11 @@ def listar_archivos_procesados():
 def serve_audio(filename):
     try:        
         # Verificar si el archivo existe
-        if not os.path.exists(os.path.join(app.config['AUDIO_FOLDER'], filename)):
+        if not os.path.exists(os.path.join(current_app.config['AUDIO_FOLDER'], filename)):
             return {"error": "Archivo no encontrado"}, 404
         
         return send_from_directory(
-            app.config['AUDIO_FOLDER'], 
+            current_app.config['AUDIO_FOLDER'], 
             filename,
             as_attachment=False,  # Para reproducir en el navegador
             mimetype='audio/mp3'
@@ -89,13 +92,20 @@ def upload_file():
     
     file = request.files['file']
     if file.filename == '':
-        return 'No file selected', 400
+        return 'No file selected', 400    
+
+    # valido a través de la biblioteca secure_filename que el nombre del archivo no tenga caracteres extraños para usuarios que intente alguna inyección de datos o
+    # sobreescribir archivos de sistema modificando la ruta donde se almacena
+    if file and file.filename != '':
+        nombre_seguro = secure_filename(file.filename)
+        if nombre_seguro != '':
+            file.filename = nombre_seguro
 
     # logger.info(f"main.py - upload_file - 01 - Nombre del archivo subido: {FILENAME}")
     # Asegurarse de que el directorio existe (por si acaso)
-    os.makedirs(app.config['SAVE_FOLDER'], exist_ok=True)
+    os.makedirs(current_app.config['SAVE_FOLDER'], exist_ok=True)
 
-    file_path = os.path.join(app.config['SAVE_FOLDER'], file.filename)
+    file_path = os.path.join(current_app.config['SAVE_FOLDER'], file.filename)
     logger.info(f"main.py - upload_file - 01 - Guardando archivo en: {file_path}")
     file.save(file_path)
     logger.info(f"main.py - upload_file - 02 - El archivo se llama: {file.filename}")
@@ -103,7 +113,7 @@ def upload_file():
     filename =file.filename.split('.')[0]
 
     doc_resaltado = "p_" + filename + ".docx"
-    doc_resaltado_path = os.path.join('/shared-files/diario_procesado/', doc_resaltado)
+    doc_resaltado_path = os.path.join('/app/shared-files/diario_procesado/', doc_resaltado)
     extraer_texto_resaltado(file_path, doc_resaltado_path)
     logger.info("main.py - upload_file - 03 - Documento procesado con texto resaltado guardado en: " + doc_resaltado_path)     
 
@@ -118,27 +128,57 @@ def upload_file():
     # palabras_caracteres = convertir_a_formato_ssml(doc_resaltado_path, doc_ssml_path)
     # logger.info("main.py - upload_file - 03 - Documento xml" + doc_ssml)     
     # logger.info("main.py - upload_file - 03 - Documento procesado con texto resaltado guardado en: " + doc_ssml_path)     
-    # tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(doc_ssml_path)
+    tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(doc_resaltado_path)
     # logger.info("main.py - upload_file - 04 - Documento convertido a formato ssml y guardado en: " + doc_ssml_path)     
+
+    file_id = str(uuid.uuid4())
+
+    if 'files' not in session:
+        session['files'] = {}
+        
+        session['files'][file_id] = {
+            'id': file_id,
+            'filename': doc_resaltado,
+            'bytes': tamanio_megabytes_archivo,
+            'palabras': cantidad_palabras,
+            'caracteres': cantidad_catacteres
+        }
+        session.modified = True
 
     response_data = {"status": "OK", "Cantidad de palabras en SSML:": cantidad_palabras, "Cantidad de caracteres en SSML": cantidad_catacteres, "Tamaño del archivo SSML en megabytes" : tamanio_megabytes_archivo }
     logger.info (f"main.py - upload_file - 05 - {response_data}")
     
-    return jsonify({"palabras:": cantidad_palabras, "caracteres": cantidad_catacteres, "tamanio" : tamanio_megabytes_archivo }), 200
+    return jsonify({"file_id": file_id, "filename": doc_resaltado, "palabras:": cantidad_palabras, "caracteres": cantidad_catacteres, "tamanio" : tamanio_megabytes_archivo}), 200
+    # return jsonify(session['files'][file_id]) a veces falla porque no se termina de guardar la session
 
 @main_bp.route('/api/generar_audio', methods=['GET'])
 #solo en fastApi @description("Endpoint para generar un archivo de audio a partir de un archivo SSML previamente procesado. El nombre del archivo SSML se recibe como parámetro, se lee el contenido, se envía a la API proxy para generar el audio, y luego se convierte a MP3 si es necesario. El audio generado se guarda en el directorio configurado y se devuelve información sobre el proceso.")
 # @secure_endpoint # Este endpoint solo puede ser llamado desde el frontend
 def generar_audio():
     # no recibo un archivo porque el archivo ya fue subido previamente y procesado
-    filename = request.args.get('filename')
-    if not filename:
-        return jsonify({'error': 'Filename parameter is required'}), 400
+    logging.info(f"main.py - generar_audio - DEBUG - Contenido completo de session: {dict(session)}")
+
+    file_id = request.args.get('file_id')
+    if not file_id:
+        return jsonify({'error': 'File id parameter is required'}), 400
+
+    files_dict = session.get('files', {})
+    logging.info(f"main.py - generar_audio - DEBUG - Tipo de files_dict: {type(files_dict)}")
+    logging.info(f"main.py - generar_audio - DEBUG - Keys en files_dict: {files_dict.get(file_id)}")
+    file_data = files_dict.get(file_id)
+    
+    logging.info(f"main.py - generar_audio - 00 - File ID: {file_id}")
+
+    if file_data is None or file_data == "":
+        return jsonify({'error': 'No se encontro la información del archivo'}), 400        
 
     # ssml_filename = "ssml_" + filename.split('.')[0] + ".xml"
-    # file_path = os.path.join('/shared-files/diario_ssml', ssml_filename)
-    ssml_filename = "p" + filename.split('.')[0] + ".docx"
-    file_path = os.path.join('/shared-files/diario_procesado', ssml_filename)
+    # file_path = os.path.join('/app/shared-files/diario_ssml', ssml_filename)
+    filename = file_data['filename']
+    cant_palabras = file_data['palabras']
+
+    ssml_filename = "p_" + filename.split('.')[0] + ".docx"
+    file_path = os.path.join('/app/shared-files/diario_procesado', ssml_filename)
     # por ahora vamos ausar una sola voz y lenguaje
     # 1ra iteracón: "splitear" el ssml_filename por cada título de noticia y por cada cuerpo de noticia. El título tendra una configuración especial de voz y el cuerpo otra.
     # 2da iteración: usaremos esto para generar audios en el EDM por lo tanto incluiremos una configuración especial para volanta y copete. Ligeramente distanta.
@@ -151,8 +191,8 @@ def generar_audio():
     with open(file_path, 'rb') as f:
         content_bytes = f.read()
     # Sirve para ver tamaño del archivo 
-    content = leer_archivo_ssml(file_path)
-    is_long = len(content) > 5000
+
+    is_long = cant_palabras > 5000
     files = {
         'file': (ssml_filename, content_bytes, 'application/xml')
     }
@@ -162,6 +202,18 @@ def generar_audio():
         'voice_name': 'es-ES-Standard-A',
         'audio_format': 'WAV' if is_long else 'MP3' # si es largo uso WAV
     }
+
+    processed_files = session.get('files', {})
+    file_data = processed_files.get(file_id)
+    
+    if not file_data:
+        return jsonify({
+            'error': 'Archivo no encontrado o sesión expirada'
+        }), 404
+    
+    # Usar los datos guardados
+    palabras = file_data['palabras']
+    filename = file_data['filename']
 
     response = requests.post('http://api_proxy:5000/api_proxy/generar_audio', files=files, data=data, timeout=30)
 

@@ -19,8 +19,10 @@ def create_app(config_name='development'):
 
     app.config['DEBUG'] = (config_name == 'development')
     app.config['PRODUCTION'] = (config_name == 'production')
-    app.config['AUDIO_FOLDER'] = os.getenv('AUDIO_FOLDER', '/app/shared-files/audio/')
+    app.config['AUDIO_FOLDER'] = os.getenv('AUDIO_FOLDER', '/shared-files/audio/')
     app.config['SAVE_FOLDER'] = os.getenv('SAVE_FOLDER', (os.path.join(os.getcwd(), "shared-files", "diario_pintado")))  # ruta absoluta dentro del contenedor
+    # app.config['SECRET_KEY'] = os.getenv('SECRET_KEY_APP', 'unaclavecualquiera')
+    app.secret_key = os.getenv('SECRET_KEY', os.getenv('SECRET_KEY_APP', 'unaclavecualquiera'))
 
     # Registrar blueprints de rutas
     from .routes import main_bp

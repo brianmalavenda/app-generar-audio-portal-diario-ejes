@@ -71,4 +71,4 @@ sudo systemctl restart docker
     Después de esto, prueba inmediatamente desde tu backend:
     
     docker exec -it backend-container sh
-    curl http://api-proxy:5000/api_proxy/health
+    curl http://api_proxy:5000/api_proxy/health
