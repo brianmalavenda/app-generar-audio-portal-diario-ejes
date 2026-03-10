@@ -89,7 +89,7 @@ def extraer_texto_resaltado(input_path, output_path):
         logger.info (f"main.py - extraer_texto_resaltado - 03 - Error al procesar el documento: {str(e)}")
         raise
 
-def contar_cantidad_de_palabras(texto):
+def contar_cantidad_de_palabras(input_path):
     """
     Cuenta la cantidad de palabras en un texto dado.
     Args:
@@ -97,12 +97,18 @@ def contar_cantidad_de_palabras(texto):
     Returns:
         int: La cantidad de palabras en el texto.
     """
-    texto = texto.replace(',', '') # eliminar comas para un conteo más preciso
-    texto = texto.replace('.', '') # eliminar puntos para un conteo más preciso
-    palabras = texto.split()
+    doc = Document(input_path)        
+    nuevo_doc = Document()
+    palabras = 0
+        
+    for paragraph in doc.paragraphs:
+        paragraph = paragraph.replace(',', '') # eliminar comas para un conteo más preciso
+        paragraph = paragraph.replace('.', '') # eliminar puntos para un conteo más preciso
+        palabras = paragraph.split()
+    
     return len(palabras)
 
-def contar_cantidad_de_caracteres(texto):
+def contar_cantidad_de_caracteres(input_path):
     """
     Cuenta la cantidad de caracteres en un texto dado.
     Args:
@@ -110,7 +116,16 @@ def contar_cantidad_de_caracteres(texto):
     Returns:
         int: La cantidad de caracteres en el texto.
     """
-    return len(texto)
+    doc = Document(input_path)        
+    nuevo_doc = Document()
+    caracteres = 0
+
+    for paragraph in doc.paragraphs:
+        palabras = paragraph.split()
+        texto = ''.join(palabras) # eliminar espacios para un conteo más preciso de
+        caracteres = len(texto)
+
+    return caracteres
 
 def tamanio_archivo_en_megabytes(ruta_archivo):
     """

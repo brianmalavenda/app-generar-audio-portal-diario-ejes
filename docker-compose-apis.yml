@@ -1,11 +1,35 @@
 version: '3.8'
 
 services:
+  mysql_db:
+    image: mysql:8.0
+    container_name: ejes_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD} # Usa variables de entorno
+      MYSQL_DATABASE: ejes_db
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306" # Mapea el puerto si necesitas conectarte desde tu host
+    volumes:
+      - mysql_data:/var/lib/mysql # Volumen para persistencia de datos
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # Script de inicialización
+    networks:
+      - tts-network
+
   backend:
     image: backend
     container_name: backend-container
     ports:
       - "5000:5000"
+    environment:
+      DB_HOST: mysql_db
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ejes_db
+    depends_on:
+      - mysql_db
     volumes:
       - ./shared:/app/shared-files
     networks:
@@ -28,6 +52,9 @@ services:
       - tts-network      
     depends_on:
       - backend
+
+volumes:
+  mysql_data:
 
 networks:
   tts-network:
