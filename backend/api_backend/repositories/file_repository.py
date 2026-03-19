@@ -1,4 +1,4 @@
-# repositories/file_repository.py
+from repositories.file_repository import FileRepository
 from flask import current_app
 import mysql.connector
 from typing import Optional, Dict, List
