@@ -10,10 +10,15 @@ services:
       MYSQL_DATABASE: ejes_db
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${MYSQL_USER}", "-p${MYSQL_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     ports:
       - "3306:3306" # Mapea el puerto si necesitas conectarte desde tu host
     volumes:
-      - mysql_data:/var/lib/mysql # Volumen para persistencia de datos
+      - ./mysql_data:/var/lib/mysql # Volumen para persistencia de datos
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql # Script de inicialización
     networks:
       - tts-network
@@ -29,7 +34,8 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD}
       DB_NAME: ejes_db
     depends_on:
-      - mysql_db
+      mysql_db:      
+        condition: service_healthy # Espera a que MySQL esté listo antes de iniciar el backend y no tener errores de race condition
     volumes:
       - ./shared:/app/shared-files
     networks:

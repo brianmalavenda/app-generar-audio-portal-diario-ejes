@@ -7,7 +7,7 @@ import io
 import os
 import sys
 from .utils.process_file import extraer_texto_resaltado, convertir_a_formato_ssml, tamanio_archivo_en_megabytes, contar_cantidad_de_palabras, contar_cantidad_de_caracteres
-from repositories.file_repository import FileRepository
+# from repositories.file_repository import FileRepository
 
 # Configurar logging para que vaya a stdout (se captura con docker logs)
 logging.basicConfig(
@@ -130,23 +130,32 @@ def upload_file():
     tamanio_megabytes_archivo = tamanio_archivo_en_megabytes(doc_resaltado_path)
     # logger.info("main.py - upload_file - 04 - Documento convertido a formato ssml y guardado en: " + doc_ssml_path)     
 
+    logger.info("main.py - upload_file - 04 - Metadata: " + str({
+        'metadata': {"filename": doc_resaltado, "palabras:": cantidad_palabras, "caracteres": cantidad_catacteres, "tamanio" : tamanio_megabytes_archivo }
+    }))
+
     try:
+        logger.info("main.py - upload_file - 05 - repository: " + str(current_app.file_repository))
         # Una sola línea para guardar en BD
-        file_id = FileRepository.create(
+        file_repository = current_app.file_repository
+        file_id = file_repository.create(
             original_filename=file.filename,
             original_path=file_path,
-            processed_filename=doc_resaltado,
-            processed_path=doc_resaltado_path,
-            ssml_word_count=cantidad_palabras,
-            ssml_char_count=cantidad_catacteres,
-            ssml_file_size_mb=tamanio_megabytes_archivo,
+            processed_word=doc_resaltado,
+            processed_word_path=doc_resaltado_path,
+            processed_word_count=cantidad_palabras,
+            processed_char_count=cantidad_catacteres,
+            processed_file_size_mb=tamanio_megabytes_archivo,
+            audio_path='',  # Se actualizará cuando se genere el audio
             status='processed',
             session_id=session.get('session_id', '')
         )
 
+        logger.info("main.py - upload_file - 05 - Registro creado en la base de datos con ID: " + str(file_id))
+
         return jsonify({
         'status': 'OK', 
-        'file_id': inserted_id, # El frontend usará este ID para el siguiente paso
+        'file_id': file_id, # El frontend usará este ID para el siguiente paso
         'metadata': {"filename": doc_resaltado, "palabras:": cantidad_palabras, "caracteres": cantidad_catacteres, "tamanio" : tamanio_megabytes_archivo } # Puedes devolver metadatos si quieres
         }), 200
 
@@ -163,7 +172,8 @@ def generar_audio():
     if not file_id:
             return jsonify({'error': 'File id parameter is required'}), 400
 
-    file_record = FileRepository.find_by_id(file_id)
+    file_repository = current_app.file_repository
+    file_record = file_repository.find_by_id(file_id)
     if not file_record:
         return jsonify({'error': 'File ID not found'}), 404
 
@@ -232,7 +242,7 @@ def generar_audio():
                         os.remove(audio_path)
                         print(f"🗑️  Eliminado WAV original")        
                         
-                    actualizado = FileRepository.update_audio_path(file_id, audio_path)
+                    actualizado = file_repository.update_audio_path(file_id, audio_path)
                     if not actualizado:
                         return jsonify({'warning': 'Audio generado pero no se pudo actualizar el registro'}), 202
                         

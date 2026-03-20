@@ -1,39 +1,38 @@
-from repositories.file_repository import FileRepository
 from flask import current_app
 import mysql.connector
 from typing import Optional, Dict, List
+import logging
+
+logger = logging.getLogger(__name__)
 
 class FileRepository:
-    """Repositorio para manejar operaciones de la tabla file_history"""
-    connection_pool = mysql.connector.pooling.MySQLConnectionPool(**current_app.config['DB_CONFIG'])
+    def __init__(self, conn_config):
+        self.connection_pool = mysql.connector.pooling.MySQLConnectionPool(**conn_config)
 
-    def get_db_connection():
-        return connection_pool.get_connection()
-
-
-    @staticmethod
-    def create(original_filename: str, original_path: str, **kwargs) -> int:
+    def create(**kwargs) -> int:
         """
         Inserta un nuevo registro en file_history.
         Retorna el ID del registro insertado.
         """
-        connection = self.get_db_connection()
+        connection = self.connection_pool.get_connection()
         cursor = connection.cursor()
+
         try:
             sql = """
             INSERT INTO file_history 
-            (original_filename, original_path, processed_filename, processed_path, 
-             ssml_word_count, ssml_char_count, ssml_file_size_mb, status, session_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (original_filename, original_path, processed_word, processed_word_path, 
+             processed_word_count, processed_char_count, processed_file_size_mb, audio_path, status, session_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             values = (
-                original_filename,
-                original_path,
-                kwargs.get('processed_filename'),
-                kwargs.get('processed_path'),
-                kwargs.get('ssml_word_count'),
-                kwargs.get('ssml_char_count'),
-                kwargs.get('ssml_file_size_mb'),
+                kwargs.get('original_filename'),
+                kwargs.get('original_path'),
+                kwargs.get('processed_word'),
+                kwargs.get('processed_word_path'),
+                kwargs.get('processed_word_count'),
+                kwargs.get('processed_char_count'),
+                kwargs.get('processed_file_size_mb'),
+                kwargs.get('audio_path', ''),  # Si no se ha generado el audio aún, se guarda como cadena vacía
                 kwargs.get('status', 'uploaded'),
                 kwargs.get('session_id', '')
             )
@@ -47,13 +46,12 @@ class FileRepository:
             cursor.close()
             connection.close()
     
-    @staticmethod
     def find_by_id(file_id: int) -> Optional[Dict]:
         """
         Busca un archivo por su ID.
         Retorna un diccionario con los datos o None si no existe.
         """
-        connection = self.get_db_connection()
+        connection = self.connection_pool.get_connection()
         cursor = connection.cursor(dictionary=True)
         try:
             cursor.execute("SELECT * FROM file_history WHERE id = %s", (file_id,))
@@ -62,13 +60,12 @@ class FileRepository:
             cursor.close()
             connection.close()
     
-    @staticmethod
     def update_audio_path(file_id: int, audio_path: str) -> bool:
         """
         Actualiza la ruta del audio generado.
         Retorna True si se actualizó correctamente.
         """
-        connection = self.get_db_connection()
+        connection = self.connection_pool.get_connection()
         cursor = connection.cursor()
         try:
             sql = """
@@ -86,12 +83,11 @@ class FileRepository:
             cursor.close()
             connection.close()
     
-    @staticmethod
     def list_by_session(session_id: str, limit: int = 50) -> List[Dict]:
         """
         Lista los archivos de una sesión específica.
         """
-        connection = self.get_db_connection()
+        connection = self.connection_pool.get_connection()
         cursor = connection.cursor(dictionary=True)
         try:
             cursor.execute(

@@ -99,14 +99,24 @@ def contar_cantidad_de_palabras(input_path):
     """
     doc = Document(input_path)        
     nuevo_doc = Document()
-    palabras = 0
+    total_palabras = 0
         
     for paragraph in doc.paragraphs:
-        paragraph = paragraph.replace(',', '') # eliminar comas para un conteo más preciso
-        paragraph = paragraph.replace('.', '') # eliminar puntos para un conteo más preciso
-        palabras = paragraph.split()
+        texto_parrafo = paragraph.text
+        
+        # Limpiar caracteres especiales
+        texto_parrafo = texto_parrafo.replace(',', '')   # eliminar comas
+        texto_parrafo = texto_parrafo.replace('.', '')   # eliminar puntos
+        texto_parrafo = texto_parrafo.replace(';', '')   # eliminar punto y coma
+        texto_parrafo = texto_parrafo.replace(':', '')   # eliminar dos puntos
+        texto_parrafo = texto_parrafo.replace('!', '')   # eliminar exclamaciones
+        texto_parrafo = texto_parrafo.replace('?', '')   # eliminar interrogaciones
+        
+        # Dividir en palabras y contar
+        palabras = texto_parrafo.split()
+        total_palabras += len(palabras)
     
-    return len(palabras)
+    return total_palabras
 
 def contar_cantidad_de_caracteres(input_path):
     """
@@ -118,14 +128,16 @@ def contar_cantidad_de_caracteres(input_path):
     """
     doc = Document(input_path)        
     nuevo_doc = Document()
-    caracteres = 0
+    total_caracteres = 0
 
     for paragraph in doc.paragraphs:
-        palabras = paragraph.split()
-        texto = ''.join(palabras) # eliminar espacios para un conteo más preciso de
-        caracteres = len(texto)
+        texto_parrafo = paragraph.text
+        
+        # Limpiar caracteres especiales
+        texto_parrafo = texto_parrafo.join(texto_parrafo.split())
+        total_caracteres += len(texto_parrafo)
 
-    return caracteres
+    return total_caracteres
 
 def tamanio_archivo_en_megabytes(ruta_archivo):
     """
